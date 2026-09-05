@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #FAF7F2;
+    color: #1F2937;
+    overflow-x: hidden;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F3EFEA;
+}
+::-webkit-scrollbar-thumb {
+  background: #C5A059;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #7A1C1C;
+}
+
+/* Luxury Micro-Animations */
+.hero-gradient {
+  background: linear-gradient(135deg, rgba(20,20,20,0.85) 0%, rgba(122,28,28,0.7) 100%);
+}
+
+.gold-gradient-text {
+  background: linear-gradient(135deg, #D4AF37 0%, #F7E7CE 50%, #B8860B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gold-btn {
+  background: linear-gradient(135deg, #D4AF37 0%, #C5A059 100%);
+  color: #141414;
+  transition: all 0.3s ease;
+}
+.gold-btn:hover {
+  background: linear-gradient(135deg, #C5A059 0%, #B8860B 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -5px rgba(212, 175, 55, 0.4);
+}
+
+.maroon-btn {
+  background: linear-gradient(135deg, #7A1C1C 0%, #4A0E0E 100%);
+  color: #FFFFFF;
+  transition: all 0.3s ease;
+}
+.maroon-btn:hover {
+  background: linear-gradient(135deg, #8B1E1E 0%, #5E1212 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -5px rgba(122, 28, 28, 0.4);
+}
+
+/* Glassmorphism Card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+/* Shimmer Skeleton Loader */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #EFECE6 25%, #F7F5F0 50%, #EFECE6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
