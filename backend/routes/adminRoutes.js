@@ -10,8 +10,8 @@ router.use(authenticateToken, requireAdmin);
 router.get('/dashboard', async (req, res) => {
   try {
     const totalSalesRes = await dbAsync.get('SELECT SUM(total_amount) as total FROM orders WHERE payment_status = "paid" OR order_status = "delivered"');
-    const todaySalesRes = await dbAsync.get('SELECT SUM(total_amount) as total FROM orders WHERE DATE(created_at) = DATE("now") AND order_status != "cancelled"');
-    const monthSalesRes = await dbAsync.get('SELECT SUM(total_amount) as total FROM orders WHERE strftime("%Y-%m", created_at) = strftime("%Y-%m", "now") AND order_status != "cancelled"');
+    const todaySalesRes = await dbAsync.get('SELECT SUM(total_amount) as total FROM orders WHERE DATE(created_at) = CURDATE() AND order_status != "cancelled"');
+    const monthSalesRes = await dbAsync.get('SELECT SUM(total_amount) as total FROM orders WHERE DATE_FORMAT(created_at, "%Y-%m") = DATE_FORMAT(NOW(), "%Y-%m") AND order_status != "cancelled"');
 
     const totalOrdersRes = await dbAsync.get('SELECT COUNT(*) as total FROM orders');
     const pendingOrdersRes = await dbAsync.get('SELECT COUNT(*) as total FROM orders WHERE order_status IN ("pending", "confirmed", "processing", "packed")');
@@ -27,7 +27,7 @@ router.get('/dashboard', async (req, res) => {
     const salesByDay = await dbAsync.all(`
       SELECT DATE(created_at) as date, SUM(total_amount) as revenue, COUNT(*) as orders
       FROM orders
-      WHERE order_status != 'cancelled' AND created_at >= DATE('now', '-7 days')
+      WHERE order_status != 'cancelled' AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
       GROUP BY DATE(created_at)
       ORDER BY date ASC
     `);

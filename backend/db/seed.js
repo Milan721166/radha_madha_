@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const { dbAsync, initDatabase } = require('./database');
 
 async function seedData() {
-  console.log('Initializing database tables...');
+  console.log('Initializing MySQL database tables...');
   await initDatabase();
 
   console.log('Seeding initial data for Radhamav Fashions...');
@@ -12,10 +12,11 @@ async function seedData() {
   const customerPassword = await bcrypt.hash('customer123', 10);
 
   await dbAsync.run(`
-    INSERT OR IGNORE INTO users (id, name, email, password_hash, phone, role, status)
+    INSERT INTO users (id, name, email, password_hash, phone, role, status)
     VALUES 
     (1, 'Radhamav Admin', 'admin@radhamav.com', ?, '+91 9876543210', 'admin', 'active'),
-    (2, 'Ananya Sharma', 'customer@radhamav.com', ?, '+91 9876543211', 'customer', 'active');
+    (2, 'Ananya Sharma', 'customer@radhamav.com', ?, '+91 9876543211', 'customer', 'active')
+    ON DUPLICATE KEY UPDATE name=VALUES(name), password_hash=VALUES(password_hash);
   `, [adminPassword, customerPassword]);
 
   // 2. Seed Categories
@@ -32,8 +33,9 @@ async function seedData() {
 
   for (const cat of categories) {
     await dbAsync.run(`
-      INSERT OR REPLACE INTO categories (id, name, slug, image, display_order, status)
+      INSERT INTO categories (id, name, slug, image, display_order, status)
       VALUES (?, ?, ?, ?, ?, 'active')
+      ON DUPLICATE KEY UPDATE name=VALUES(name), image=VALUES(image);
     `, [cat.id, cat.name, cat.slug, cat.image, cat.display_order]);
   }
 
@@ -245,11 +247,12 @@ async function seedData() {
 
   for (const p of products) {
     await dbAsync.run(`
-      INSERT OR REPLACE INTO products (
+      INSERT INTO products (
         id, name, slug, sku, category_id, short_desc, description,
         price, sale_price, cost_price, stock, material, fabric, care_instructions,
         is_featured, is_bestseller, is_new_arrival, rating_avg, reviews_count, status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published')
+      ON DUPLICATE KEY UPDATE name=VALUES(name), price=VALUES(price), sale_price=VALUES(sale_price);
     `, [
       p.id, p.name, p.slug, p.sku, p.category_id, p.short_desc, p.description,
       p.price, p.sale_price, p.cost_price, p.stock, p.material, p.fabric, p.care_instructions,
@@ -299,27 +302,30 @@ async function seedData() {
 
   for (const b of banners) {
     await dbAsync.run(`
-      INSERT OR REPLACE INTO banners (id, title, subtitle, image, button_text, button_link, section, display_order, status)
+      INSERT INTO banners (id, title, subtitle, image, button_text, button_link, section, display_order, status)
       VALUES (?, ?, ?, ?, ?, ?, 'hero', ?, 'active')
+      ON DUPLICATE KEY UPDATE title=VALUES(title), image=VALUES(image);
     `, [b.id, b.title, b.subtitle, b.image, b.button_text, b.button_link, b.display_order]);
   }
 
   // 5. Seed Coupons
   await dbAsync.run(`
-    INSERT OR REPLACE INTO coupons (id, code, discount_type, discount_value, min_order_value, max_discount_amount, status)
+    INSERT INTO coupons (id, code, discount_type, discount_value, min_order_value, max_discount_amount, status)
     VALUES 
     (1, 'WELCOME10', 'percentage', 10, 1999, 1000, 'active'),
     (2, 'FESTIVE500', 'fixed', 500, 4999, 500, 'active'),
-    (3, 'RADHAMAVVIP', 'percentage', 20, 9999, 3000, 'active');
+    (3, 'RADHAMAVVIP', 'percentage', 20, 9999, 3000, 'active')
+    ON DUPLICATE KEY UPDATE discount_value=VALUES(discount_value);
   `);
 
   // 6. Seed Reviews
   await dbAsync.run(`
-    INSERT OR REPLACE INTO reviews (id, product_id, user_id, user_name, rating, review_text, verified_purchase, status)
+    INSERT INTO reviews (id, product_id, user_id, user_name, rating, review_text, verified_purchase, status)
     VALUES 
     (1, 1, 2, 'Priya S.', 5, 'The Kanjeevaram saree exceeded my expectations! The zari shine and rich crimson red look truly regal for weddings.', 1, 'approved'),
     (2, 2, 2, 'Ananya Sharma', 5, 'Super soft Chanderi silk and perfect fitting! Fast delivery within 3 days.', 1, 'approved'),
-    (3, 7, 2, 'Meera Nair', 5, 'Stunning Kundan choker set. High quality polish that looks genuine gold.', 1, 'approved');
+    (3, 7, 2, 'Meera Nair', 5, 'Stunning Kundan choker set. High quality polish that looks genuine gold.', 1, 'approved')
+    ON DUPLICATE KEY UPDATE review_text=VALUES(review_text);
   `);
 
   // 7. Seed CMS Pages
@@ -363,8 +369,9 @@ async function seedData() {
 
   for (const cms of cmsPages) {
     await dbAsync.run(`
-      INSERT OR REPLACE INTO cms_pages (slug, title, content, meta_title, meta_description)
+      INSERT INTO cms_pages (slug, title, content, meta_title, meta_description)
       VALUES (?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE title=VALUES(title), content=VALUES(content);
     `, [cms.slug, cms.title, cms.content, cms.meta_title, cms.meta_description]);
   }
 
@@ -382,17 +389,18 @@ async function seedData() {
 
   for (const s of settings) {
     await dbAsync.run(`
-      INSERT OR REPLACE INTO settings (key, value)
+      INSERT INTO settings (\`key\`, \`value\`)
       VALUES (?, ?)
+      ON DUPLICATE KEY UPDATE \`value\`=VALUES(\`value\`);
     `, [s.key, s.value]);
   }
 
-  console.log('Database seeding complete successfully!');
+  console.log('MySQL Database seeding completed successfully!');
 }
 
 if (require.main === module) {
   seedData().then(() => process.exit(0)).catch(err => {
-    console.error('Seed error:', err);
+    console.error('MySQL Seed error:', err.message);
     process.exit(1);
   });
 }

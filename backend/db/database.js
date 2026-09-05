@@ -1,66 +1,393 @@
+const mysql = require('mysql2/promise');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
+const dotenv = require('dotenv');
 
-const dbPath = path.join(__dirname, 'radhamav.sqlite');
+dotenv.config();
 
-// Ensure db directory exists
-const dbDir = path.dirname(dbPath);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
+const DATABASE_URL = process.env.DATABASE_URL;
+const DB_HOST = process.env.DB_HOST || '187.127.210.144';
+const DB_PORT = process.env.DB_PORT || 7947;
+const DB_USER = process.env.DB_USER || 'mysql';
+const DB_PASSWORD = process.env.DB_PASSWORD || 'yFPG3DheUfoCQJmGPlO5k80vVkIDwkrWKjAPMpMk3eU6dMJv7enB32LkLnryaBAa';
+const DB_NAME = process.env.DB_NAME || 'default';
+
+let mysqlPool = null;
+let sqliteDb = null;
+
+const sqlitePath = path.join(__dirname, 'radhamav.sqlite');
+
+async function getEngine() {
+  if (mysqlPool) return { type: 'mysql', pool: mysqlPool };
+  if (sqliteDb) return { type: 'sqlite', db: sqliteDb };
+
+  // Attempt MySQL connection using connection string or credentials
+  try {
+    const config = DATABASE_URL ? { uri: DATABASE_URL, multipleStatements: true, connectTimeout: 10000 } : {
+      host: DB_HOST,
+      port: Number(DB_PORT),
+      user: DB_USER,
+      password: DB_PASSWORD,
+      database: DB_NAME,
+      waitForConnections: true,
+      connectionLimit: 10,
+      connectTimeout: 10000,
+      multipleStatements: true
+    };
+
+    mysqlPool = mysql.createPool(config);
+
+    // Test ping
+    await mysqlPool.query('SELECT 1');
+    console.log(`✅ Connected to Remote MySQL Database at ${DB_HOST}:${DB_PORT}/${DB_NAME}`);
+    return { type: 'mysql', pool: mysqlPool };
+  } catch (err) {
+    console.warn(`⚠️ Remote MySQL Connection Notice (${err.message}). Defaulting to embedded SQLite database...`);
+    
+    // SQLite Fallback setup
+    const dbDir = path.dirname(sqlitePath);
+    if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
+
+    sqliteDb = new sqlite3.Database(sqlitePath);
+    sqliteDb.run('PRAGMA foreign_keys = ON;');
+    console.log(`✅ Connected to SQLite database at: ${sqlitePath}`);
+    return { type: 'sqlite', db: sqliteDb };
+  }
 }
 
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error connecting to SQLite database:', err.message);
-  } else {
-    console.log('Connected to SQLite database at:', dbPath);
-    // Enable Foreign Keys
-    db.run('PRAGMA foreign_keys = ON;');
-  }
-});
-
-// Helper functions for Promise-based queries
 const dbAsync = {
-  get: (sql, params = []) => {
-    return new Promise((resolve, reject) => {
-      db.get(sql, params, (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
+  get: async (sql, params = []) => {
+    const engine = await getEngine();
+    if (engine.type === 'mysql') {
+      const [rows] = await engine.pool.query(sql, params);
+      return rows && rows.length > 0 ? rows[0] : null;
+    } else {
+      return new Promise((resolve, reject) => {
+        engine.db.get(sql, params, (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        });
       });
-    });
+    }
   },
 
-  all: (sql, params = []) => {
-    return new Promise((resolve, reject) => {
-      db.all(sql, params, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
+  all: async (sql, params = []) => {
+    const engine = await getEngine();
+    if (engine.type === 'mysql') {
+      const [rows] = await engine.pool.query(sql, params);
+      return rows || [];
+    } else {
+      return new Promise((resolve, reject) => {
+        engine.db.all(sql, params, (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows || []);
+        });
       });
-    });
+    }
   },
 
-  run: (sql, params = []) => {
-    return new Promise((resolve, reject) => {
-      db.run(sql, params, function (err) {
-        if (err) reject(err);
-        else resolve({ id: this.lastID, changes: this.changes });
+  run: async (sql, params = []) => {
+    const engine = await getEngine();
+    if (engine.type === 'mysql') {
+      const [result] = await engine.pool.query(sql, params);
+      return { id: result.insertId, changes: result.affectedRows };
+    } else {
+      return new Promise((resolve, reject) => {
+        engine.db.run(sql, params, function (err) {
+          if (err) reject(err);
+          else resolve({ id: this.lastID, changes: this.changes });
+        });
       });
-    });
+    }
   },
 
-  exec: (sql) => {
-    return new Promise((resolve, reject) => {
-      db.exec(sql, (err) => {
-        if (err) reject(err);
-        else resolve();
+  exec: async (sql) => {
+    const engine = await getEngine();
+    if (engine.type === 'mysql') {
+      // Split statements and execute individually
+      const statements = sql.split(';').map(s => s.trim()).filter(Boolean);
+      for (const statement of statements) {
+        await engine.pool.query(statement);
+      }
+    } else {
+      return new Promise((resolve, reject) => {
+        engine.db.exec(sql, (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
       });
-    });
+    }
   }
 };
 
 const initDatabase = async () => {
-  const schemaSQL = `
+  const engine = await getEngine();
+
+  const mysqlSchema = `
+    CREATE TABLE IF NOT EXISTS users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password_hash VARCHAR(255) NOT NULL,
+      phone VARCHAR(50),
+      role VARCHAR(50) DEFAULT 'customer',
+      status VARCHAR(50) DEFAULT 'active',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS categories (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      slug VARCHAR(255) UNIQUE NOT NULL,
+      image TEXT,
+      parent_id INT DEFAULT NULL,
+      status VARCHAR(50) DEFAULT 'active',
+      display_order INT DEFAULT 0
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS products (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      slug VARCHAR(255) UNIQUE NOT NULL,
+      sku VARCHAR(100) UNIQUE NOT NULL,
+      category_id INT NOT NULL,
+      subcategory_id INT,
+      short_desc TEXT,
+      description TEXT,
+      price DECIMAL(10, 2) NOT NULL,
+      sale_price DECIMAL(10, 2),
+      cost_price DECIMAL(10, 2),
+      tax_percent DECIMAL(5, 2) DEFAULT 5.0,
+      stock INT DEFAULT 0,
+      low_stock_threshold INT DEFAULT 5,
+      material VARCHAR(255),
+      fabric VARCHAR(255),
+      care_instructions TEXT,
+      is_featured TINYINT DEFAULT 0,
+      is_bestseller TINYINT DEFAULT 0,
+      is_new_arrival TINYINT DEFAULT 1,
+      status VARCHAR(50) DEFAULT 'published',
+      seo_title VARCHAR(255),
+      seo_description TEXT,
+      seo_keywords VARCHAR(255),
+      rating_avg DECIMAL(3, 1) DEFAULT 4.5,
+      reviews_count INT DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS product_variants (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      product_id INT NOT NULL,
+      sku VARCHAR(100) NOT NULL,
+      size VARCHAR(50),
+      color VARCHAR(50),
+      hex_code VARCHAR(20),
+      price DECIMAL(10, 2),
+      sale_price DECIMAL(10, 2),
+      stock INT DEFAULT 0,
+      image TEXT,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS product_images (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      product_id INT NOT NULL,
+      image_url TEXT NOT NULL,
+      is_primary TINYINT DEFAULT 0,
+      display_order INT DEFAULT 0,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS cart (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT UNIQUE NOT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS cart_items (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      cart_id INT NOT NULL,
+      product_id INT NOT NULL,
+      variant_id INT,
+      size VARCHAR(50),
+      color VARCHAR(50),
+      quantity INT NOT NULL DEFAULT 1,
+      FOREIGN KEY (cart_id) REFERENCES cart(id) ON DELETE CASCADE,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS wishlist (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      product_id INT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY user_product (user_id, product_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS addresses (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      full_name VARCHAR(255) NOT NULL,
+      phone VARCHAR(50) NOT NULL,
+      house_flat VARCHAR(255) NOT NULL,
+      street VARCHAR(255) NOT NULL,
+      area VARCHAR(255),
+      city VARCHAR(100) NOT NULL,
+      state VARCHAR(100) NOT NULL,
+      pincode VARCHAR(20) NOT NULL,
+      country VARCHAR(100) DEFAULT 'India',
+      is_default TINYINT DEFAULT 0,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS orders (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      order_number VARCHAR(100) UNIQUE NOT NULL,
+      user_id INT NOT NULL,
+      customer_name VARCHAR(255) NOT NULL,
+      customer_email VARCHAR(255) NOT NULL,
+      customer_phone VARCHAR(50) NOT NULL,
+      shipping_address TEXT NOT NULL,
+      payment_method VARCHAR(50) NOT NULL,
+      payment_status VARCHAR(50) DEFAULT 'pending',
+      order_status VARCHAR(50) DEFAULT 'pending',
+      tracking_number VARCHAR(100),
+      courier_name VARCHAR(100),
+      subtotal DECIMAL(10, 2) NOT NULL,
+      shipping_fee DECIMAL(10, 2) DEFAULT 0,
+      tax_amount DECIMAL(10, 2) DEFAULT 0,
+      discount_amount DECIMAL(10, 2) DEFAULT 0,
+      total_amount DECIMAL(10, 2) NOT NULL,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS order_items (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      order_id INT NOT NULL,
+      product_id INT NOT NULL,
+      variant_id INT,
+      product_name VARCHAR(255) NOT NULL,
+      sku VARCHAR(100) NOT NULL,
+      size VARCHAR(50),
+      color VARCHAR(50),
+      image TEXT,
+      price DECIMAL(10, 2) NOT NULL,
+      quantity INT NOT NULL,
+      total DECIMAL(10, 2) NOT NULL,
+      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS order_status_history (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      order_id INT NOT NULL,
+      status VARCHAR(50) NOT NULL,
+      comment TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS returns (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      order_id INT NOT NULL,
+      user_id INT NOT NULL,
+      product_id INT NOT NULL,
+      reason VARCHAR(255) NOT NULL,
+      description TEXT,
+      images TEXT,
+      status VARCHAR(50) DEFAULT 'requested',
+      admin_comment TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS coupons (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      code VARCHAR(50) UNIQUE NOT NULL,
+      discount_type VARCHAR(50) NOT NULL,
+      discount_value DECIMAL(10, 2) NOT NULL,
+      min_order_value DECIMAL(10, 2) DEFAULT 0,
+      max_discount_amount DECIMAL(10, 2) DEFAULT 0,
+      start_date DATE,
+      end_date DATE,
+      usage_limit INT DEFAULT 1000,
+      used_count INT DEFAULT 0,
+      status VARCHAR(50) DEFAULT 'active'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS reviews (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      product_id INT NOT NULL,
+      user_id INT NOT NULL,
+      user_name VARCHAR(255) NOT NULL,
+      rating INT NOT NULL,
+      review_text TEXT,
+      images TEXT,
+      status VARCHAR(50) DEFAULT 'approved',
+      verified_purchase TINYINT DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS banners (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      subtitle TEXT,
+      image TEXT NOT NULL,
+      button_text VARCHAR(100) DEFAULT 'Shop Now',
+      button_link VARCHAR(255) DEFAULT '/shop',
+      section VARCHAR(50) DEFAULT 'hero',
+      display_order INT DEFAULT 0,
+      status VARCHAR(50) DEFAULT 'active'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS cms_pages (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      slug VARCHAR(100) UNIQUE NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      content LONGTEXT NOT NULL,
+      meta_title VARCHAR(255),
+      meta_description TEXT
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS contact_messages (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      phone VARCHAR(50),
+      subject VARCHAR(255) NOT NULL,
+      message TEXT NOT NULL,
+      status VARCHAR(50) DEFAULT 'unread',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS inventory_logs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      product_id INT NOT NULL,
+      variant_id INT,
+      change_qty INT NOT NULL,
+      type VARCHAR(50) NOT NULL,
+      reference_id VARCHAR(100),
+      note TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS settings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      \`key\` VARCHAR(100) UNIQUE NOT NULL,
+      \`value\` TEXT NOT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `;
+
+  const sqliteSchema = `
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -79,8 +406,7 @@ const initDatabase = async () => {
       image TEXT,
       parent_id INTEGER DEFAULT NULL,
       status TEXT DEFAULT 'active',
-      display_order INTEGER DEFAULT 0,
-      FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL
+      display_order INTEGER DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS products (
@@ -110,8 +436,7 @@ const initDatabase = async () => {
       seo_keywords TEXT,
       rating_avg REAL DEFAULT 4.5,
       reviews_count INTEGER DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS product_variants (
@@ -124,8 +449,7 @@ const initDatabase = async () => {
       price REAL,
       sale_price REAL,
       stock INTEGER DEFAULT 0,
-      image TEXT,
-      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      image TEXT
     );
 
     CREATE TABLE IF NOT EXISTS product_images (
@@ -133,15 +457,13 @@ const initDatabase = async () => {
       product_id INTEGER NOT NULL,
       image_url TEXT NOT NULL,
       is_primary INTEGER DEFAULT 0,
-      display_order INTEGER DEFAULT 0,
-      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      display_order INTEGER DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS cart (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER UNIQUE NOT NULL,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS cart_items (
@@ -151,9 +473,7 @@ const initDatabase = async () => {
       variant_id INTEGER,
       size TEXT,
       color TEXT,
-      quantity INTEGER NOT NULL DEFAULT 1,
-      FOREIGN KEY (cart_id) REFERENCES cart(id) ON DELETE CASCADE,
-      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      quantity INTEGER NOT NULL DEFAULT 1
     );
 
     CREATE TABLE IF NOT EXISTS wishlist (
@@ -161,9 +481,7 @@ const initDatabase = async () => {
       user_id INTEGER NOT NULL,
       product_id INTEGER NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(user_id, product_id),
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      UNIQUE(user_id, product_id)
     );
 
     CREATE TABLE IF NOT EXISTS addresses (
@@ -178,8 +496,7 @@ const initDatabase = async () => {
       state TEXT NOT NULL,
       pincode TEXT NOT NULL,
       country TEXT DEFAULT 'India',
-      is_default INTEGER DEFAULT 0,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      is_default INTEGER DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS orders (
@@ -201,8 +518,7 @@ const initDatabase = async () => {
       discount_amount REAL DEFAULT 0,
       total_amount REAL NOT NULL,
       notes TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS order_items (
@@ -217,8 +533,7 @@ const initDatabase = async () => {
       image TEXT,
       price REAL NOT NULL,
       quantity INTEGER NOT NULL,
-      total REAL NOT NULL,
-      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+      total REAL NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS order_status_history (
@@ -226,8 +541,7 @@ const initDatabase = async () => {
       order_id INTEGER NOT NULL,
       status TEXT NOT NULL,
       comment TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS returns (
@@ -240,9 +554,7 @@ const initDatabase = async () => {
       images TEXT,
       status TEXT DEFAULT 'requested',
       admin_comment TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS coupons (
@@ -269,9 +581,7 @@ const initDatabase = async () => {
       images TEXT,
       status TEXT DEFAULT 'approved',
       verified_purchase INTEGER DEFAULT 1,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS banners (
@@ -325,15 +635,21 @@ const initDatabase = async () => {
   `;
 
   try {
-    await dbAsync.exec(schemaSQL);
-    console.log('Database tables initialized successfully.');
+    if (engine.type === 'mysql') {
+      await dbAsync.exec(mysqlSchema);
+      console.log('✅ Remote MySQL Database tables initialized successfully.');
+    } else {
+      await dbAsync.exec(sqliteSchema);
+      console.log('✅ SQLite Database tables initialized successfully.');
+    }
   } catch (error) {
-    console.error('Failed to initialize database tables:', error);
+    console.error('Failed to initialize database tables:', error.message);
   }
 };
 
+
 module.exports = {
-  db,
   dbAsync,
-  initDatabase
+  initDatabase,
+  getEngine
 };
