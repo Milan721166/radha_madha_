@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Package, Folders, Boxes, ShoppingBag, Users, Tag, Image, FileText, Star, Settings, BarChart2, Store, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import logo from '../../logo.png';
 
 export default function AdminLayout() {
   const { user, logout, isAdmin } = useAuth();
@@ -42,9 +43,7 @@ export default function AdminLayout() {
       <aside className="w-full md:w-64 bg-brand-obsidian text-white shrink-0 p-6 flex flex-col justify-between border-r border-neutral-800">
         <div className="space-y-6">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-brand-gold text-neutral-900 font-serif font-bold text-lg flex items-center justify-center">
-              R
-            </div>
+            <img src={logo} alt="Radhamav Fashions Logo" className="h-9 w-auto object-contain brightness-110" />
             <div>
               <span className="font-serif font-bold text-lg text-white uppercase">Radhamav</span>
               <span className="block text-[10px] text-brand-gold font-sans uppercase tracking-widest -mt-1">Admin Portal</span>

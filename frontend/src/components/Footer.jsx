@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, ShieldCheck, Truck, RefreshCw, Award, Instagram, Facebook, Youtube } from 'lucide-react';
+import logo from '../logo.png';
 
 export default function Footer() {
   return (
@@ -55,9 +56,7 @@ export default function Footer() {
         {/* Brand Bio */}
         <div className="lg:col-span-2">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-gold to-brand-maroon flex items-center justify-center text-white font-serif font-bold text-lg">
-              R
-            </div>
+            <img src={logo} alt="Radhamav Fashions Logo" className="h-10 w-auto object-contain brightness-110" />
             <span className="font-serif font-bold text-2xl tracking-wider text-white uppercase">
               Radhamav <span className="text-brand-gold text-xs font-sans tracking-[0.2em]">FASHIONS</span>
             </span>

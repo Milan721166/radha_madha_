@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import api from '../services/api';
+import logo from '../logo.png';
 
 export default function Navbar() {
   const { user, logout, isAdmin } = useAuth();
@@ -80,9 +81,7 @@ export default function Navbar() {
 
           {/* Brand Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-gold to-brand-maroon flex items-center justify-center text-white font-serif font-bold text-xl shadow-md group-hover:scale-105 transition-transform">
-              R
-            </div>
+            <img src={logo} alt="Radhamav Fashions Logo" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
             <div className="flex flex-col">
               <span className="font-serif font-bold text-xl md:text-2xl tracking-wider text-brand-maroon uppercase">
                 Radhamav
