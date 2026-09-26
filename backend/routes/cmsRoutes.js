@@ -28,14 +28,17 @@ router.get('/page/:slug', async (req, res) => {
 // GET Store Public Settings
 router.get('/settings', async (req, res) => {
   try {
-    const settingsList = await dbAsync.all('SELECT key, value FROM settings');
+    const settingsList = await dbAsync.all('SELECT `key`, `value` FROM settings');
     const settingsObj = {};
-    settingsList.forEach(s => {
-      settingsObj[s.key] = s.value;
-    });
+    if (settingsList && Array.isArray(settingsList)) {
+      settingsList.forEach(s => {
+        settingsObj[s.key] = s.value;
+      });
+    }
     res.json({ success: true, settings: settingsObj });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch store settings' });
+    console.error('Failed to fetch store settings:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch store settings', error: err.message });
   }
 });
 

@@ -3,6 +3,23 @@ const router = express.Router();
 const { dbAsync } = require('../db/database');
 const { authenticateToken } = require('../middleware/auth');
 
+// Get Featured Reviews for Homepage
+router.get('/featured', async (req, res) => {
+  try {
+    const reviews = await dbAsync.all(`
+      SELECT r.*, p.name as product_name 
+      FROM reviews r
+      LEFT JOIN products p ON r.product_id = p.id
+      WHERE r.status = 'approved'
+      ORDER BY r.rating DESC, r.created_at DESC
+      LIMIT 6
+    `);
+    res.json({ success: true, reviews });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to fetch featured reviews' });
+  }
+});
+
 // Get Reviews for Product
 router.get('/product/:productId', async (req, res) => {
   try {

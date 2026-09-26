@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { User, Package, Heart, MapPin, Tag, LogOut, Printer, RefreshCw, X, CheckCircle2, ShieldCheck, Clock } from 'lucide-react';
+import { User, Package, Heart, MapPin, Tag, LogOut, Printer, RefreshCw, X, CheckCircle2, ShieldCheck, Clock, Smartphone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useToast } from '../context/ToastContext';
 import api from '../services/api';
 
+import OtpAuthModal from '../components/OtpAuthModal';
+
 export default function Account() {
-  const { user, logout, addresses, saveAddress, deleteAddress } = useAuth();
+  const { user, login, register, logout, addresses, saveAddress, deleteAddress } = useAuth();
   const { wishlist } = useWishlist();
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -35,6 +37,17 @@ export default function Account() {
     state: 'Telangana',
     pincode: '500033'
   });
+
+  // OTP Modal
+  const [showOtpModal, setShowOtpModal] = useState(false);
+
+  // Login form state
+  const [authMode, setAuthMode] = useState('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
 
   useEffect(() => {
     if (user && activeTab === 'orders') {
@@ -97,14 +110,129 @@ export default function Account() {
     }
   };
 
+  const handlePasswordLogin = async (e) => {
+    e.preventDefault();
+    try {
+      setAuthLoading(true);
+      if (authMode === 'login') {
+        await login(email, password);
+        showToast('Logged in successfully!', 'success');
+      } else {
+        await register(name, email, password, phone);
+        showToast('Account created successfully!', 'success');
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || 'Authentication failed', 'error');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   if (!user) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center space-y-4">
-        <h2 className="font-serif text-3xl font-bold text-neutral-900">Please Sign In</h2>
-        <p className="text-sm text-neutral-500">Sign in to access your orders, saved addresses, and profile details.</p>
-        <Link to="/checkout" className="maroon-btn px-8 py-3 rounded-full text-xs font-semibold uppercase">
-          Sign In Now
-        </Link>
+      <div className="max-w-lg mx-auto px-4 py-16">
+        <div className="bg-white rounded-3xl p-8 border border-neutral-100 shadow-xl space-y-6">
+          <div className="text-center space-y-2">
+            <h2 className="font-serif text-3xl font-bold text-neutral-900">Welcome to Radhamadv</h2>
+            <p className="text-xs text-neutral-500">Sign in to view orders, saved addresses, and profile details</p>
+          </div>
+
+          {/* Instant Mobile OTP Login Banner */}
+          <div className="p-4 bg-gradient-to-r from-red-50 to-amber-50 border border-red-100 rounded-2xl flex flex-col items-center text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md">
+              <Smartphone className="w-6 h-6" />
+            </div>
+            <div>
+              <h4 className="font-bold text-sm text-neutral-900">Fast & Secure Mobile Login</h4>
+              <p className="text-xs text-neutral-600">Log in instantly with a 6-digit SMS OTP</p>
+            </div>
+            <button
+              onClick={() => setShowOtpModal(true)}
+              className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold uppercase tracking-wider rounded-xl shadow-sm hover:shadow transition"
+            >
+              Sign In with Mobile OTP
+            </button>
+          </div>
+
+          <div className="relative flex py-1 items-center">
+            <div className="flex-grow border-t border-gray-200"></div>
+            <span className="flex-shrink mx-4 text-xs uppercase font-bold text-gray-400">Or use Password</span>
+            <div className="flex-grow border-t border-gray-200"></div>
+          </div>
+
+          {/* Standard Login/Register Form */}
+          <div className="flex justify-center border-b border-gray-100 pb-3 gap-4">
+            <button
+              onClick={() => setAuthMode('login')}
+              className={`text-xs font-bold uppercase tracking-wider pb-1 border-b-2 transition-colors ${
+                authMode === 'login' ? 'border-brand-maroon text-brand-maroon' : 'border-transparent text-gray-400'
+              }`}
+            >
+              Email Login
+            </button>
+            <button
+              onClick={() => setAuthMode('register')}
+              className={`text-xs font-bold uppercase tracking-wider pb-1 border-b-2 transition-colors ${
+                authMode === 'register' ? 'border-brand-maroon text-brand-maroon' : 'border-transparent text-gray-400'
+              }`}
+            >
+              Create Account
+            </button>
+          </div>
+
+          <form onSubmit={handlePasswordLogin} className="space-y-4">
+            {authMode === 'register' && (
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Your Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-xs outline-none focus:border-brand-maroon"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Email Address</label>
+              <input
+                type="email"
+                required
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-xs outline-none focus:border-brand-maroon"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Password</label>
+              <input
+                type="password"
+                required
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-xs outline-none focus:border-brand-maroon"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={authLoading}
+              className="w-full py-3 bg-neutral-900 hover:bg-neutral-800 text-white font-semibold rounded-xl text-xs uppercase tracking-wider transition disabled:opacity-50"
+            >
+              {authLoading ? 'Processing...' : authMode === 'login' ? 'Sign In' : 'Register Account'}
+            </button>
+          </form>
+        </div>
+
+        <OtpAuthModal
+          isOpen={showOtpModal}
+          onClose={() => setShowOtpModal(false)}
+        />
       </div>
     );
   }

@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Phone, Mail, MapPin, Send, MessageCircle } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../context/ToastContext';
 
 export default function Contact() {
   const { showToast } = useToast();
+  const [settings, setSettings] = useState({
+    store_name: 'Radhamav Fashions',
+    store_email: 'support@radhamav.com',
+    store_phone: '+91 6296740204',
+    store_address: 'Sahoo House, 6FFX+RP6, Makrampur - Temathani Rd, Larma, Larma Batitaki, West Bengal 721166'
+  });
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -13,6 +20,20 @@ export default function Contact() {
     message: ''
   });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await api.get('/cms/settings');
+        if (res.success && res.settings) {
+          setSettings(prev => ({ ...prev, ...res.settings }));
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,11 +51,13 @@ export default function Contact() {
     }
   };
 
+  const cleanPhone = (settings.store_phone || '').replace(/[^0-9]/g, '');
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
       
       <div className="text-center max-w-xl mx-auto space-y-2">
-        <span className="text-xs font-semibold text-brand-gold uppercase tracking-widest font-serif">Radhamav Concierge</span>
+        <span className="text-xs font-semibold text-brand-gold uppercase tracking-widest font-serif">{settings.store_name} Concierge</span>
         <h1 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900">Get In Touch With Us</h1>
         <p className="text-sm text-neutral-500">Our customer support concierge is ready to assist with sizing, order inquiries, and bridal consultation.</p>
       </div>
@@ -55,7 +78,7 @@ export default function Contact() {
               </div>
               <div>
                 <h4 className="font-semibold text-white">Showroom Address</h4>
-                <p className="text-xs text-neutral-400 mt-0.5">108 Silk Mill Avenue, Jubilee Hills, Hyderabad, Telangana 500033</p>
+                <p className="text-xs text-neutral-400 mt-0.5">{settings.store_address}</p>
               </div>
             </div>
 
@@ -65,7 +88,7 @@ export default function Contact() {
               </div>
               <div>
                 <h4 className="font-semibold text-white">Phone Support</h4>
-                <p className="text-xs text-neutral-400 mt-0.5">+91 98765 43210 (Mon - Sat, 10 AM - 7 PM)</p>
+                <p className="text-xs text-neutral-400 mt-0.5">{settings.store_phone} (Mon - Sat, 10 AM - 7 PM)</p>
               </div>
             </div>
 
@@ -75,7 +98,7 @@ export default function Contact() {
               </div>
               <div>
                 <h4 className="font-semibold text-white">Email Address</h4>
-                <p className="text-xs text-neutral-400 mt-0.5">support@radhamav.com</p>
+                <p className="text-xs text-neutral-400 mt-0.5">{settings.store_email}</p>
               </div>
             </div>
           </div>
@@ -83,7 +106,7 @@ export default function Contact() {
           {/* WhatsApp Direct Chat Button */}
           <div className="pt-4 border-t border-neutral-800">
             <a
-              href="https://wa.me/919876543210?text=Hi%20Radhamav%20Fashions,%20I%20have%20an%20inquiry%20regarding%20a%20product"
+              href={`https://wa.me/${cleanPhone}?text=Hi%20${encodeURIComponent(settings.store_name)},%20I%20have%20an%20inquiry`}
               target="_blank"
               rel="noreferrer"
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-2xl text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-colors"

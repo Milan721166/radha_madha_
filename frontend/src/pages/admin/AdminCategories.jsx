@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, X, Folders } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import ImageUploader from '../../components/ImageUploader';
 
 export default function AdminCategories() {
   const { showToast } = useToast();
@@ -65,7 +66,7 @@ export default function AdminCategories() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="font-serif text-3xl font-bold text-neutral-900">Category Management</h1>
-          <p className="text-xs text-neutral-500">Create & manage store categories and banner imagery</p>
+          <p className="text-xs text-neutral-500">Create & manage store categories with Cloudinary Image Uploads</p>
         </div>
         <button
           onClick={() => { setEditingCat(null); setName(''); setImage(''); setShowModal(true); }}
@@ -101,8 +102,15 @@ export default function AdminCategories() {
                 <label className="block text-xs font-semibold mb-1">Category Name</label>
                 <input type="text" required value={name} onChange={e => setName(e.target.value)} className="w-full bg-neutral-50 border rounded-xl p-2.5 text-xs outline-none" />
               </div>
+              
+              <ImageUploader
+                label="Category Cover Image (Cloudinary Direct Upload)"
+                currentImage={image}
+                onUploadSuccess={(url) => setImage(url)}
+              />
+
               <div>
-                <label className="block text-xs font-semibold mb-1">Cover Image URL</label>
+                <label className="block text-xs font-semibold mb-1">Cover Image URL (Or enter manual URL)</label>
                 <input type="url" required value={image} onChange={e => setImage(e.target.value)} className="w-full bg-neutral-50 border rounded-xl p-2.5 text-xs outline-none" />
               </div>
               <button type="submit" className="w-full maroon-btn py-3 rounded-full text-xs font-semibold uppercase">Save Category</button>

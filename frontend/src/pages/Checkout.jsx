@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { CheckCircle2, ShieldCheck, MapPin, CreditCard, Truck, ArrowRight, UserCheck, Check } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, MapPin, CreditCard, Truck, ArrowRight, UserCheck, Check, Smartphone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import api from '../services/api';
+import OtpAuthModal from '../components/OtpAuthModal';
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export default function Checkout() {
   const { showToast } = useToast();
 
   const [step, setStep] = useState(user ? 2 : 1);
+  const [showOtpModal, setShowOtpModal] = useState(false);
 
   // Guest Auth State
   const [authMode, setAuthMode] = useState('login');
@@ -184,6 +186,31 @@ export default function Checkout() {
                 </div>
               </div>
 
+              <div className="p-4 bg-gradient-to-r from-red-50 to-amber-50 border border-red-100 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 max-w-md">
+                <div className="flex items-center space-x-3 text-left">
+                  <div className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shrink-0">
+                    <Smartphone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-xs text-neutral-900">Instant Mobile OTP</h4>
+                    <p className="text-[11px] text-neutral-500">Sign in instantly via 6-digit SMS code</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowOtpModal(true)}
+                  className="w-full sm:w-auto px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl shadow transition shrink-0"
+                >
+                  Login with OTP
+                </button>
+              </div>
+
+              <div className="relative flex py-1 items-center max-w-md">
+                <div className="flex-grow border-t border-gray-200"></div>
+                <span className="flex-shrink mx-3 text-[10px] uppercase font-bold text-gray-400">Or with Email & Password</span>
+                <div className="flex-grow border-t border-gray-200"></div>
+              </div>
+
               <form onSubmit={handleAuthSubmit} className="space-y-4 max-w-md">
                 {authMode === 'register' && (
                   <div>
@@ -227,6 +254,12 @@ export default function Checkout() {
                   {authMode === 'login' ? 'Sign In & Continue' : 'Create Account & Continue'}
                 </button>
               </form>
+
+              <OtpAuthModal
+                isOpen={showOtpModal}
+                onClose={() => setShowOtpModal(false)}
+                onSuccess={() => setStep(2)}
+              />
             </div>
           )}
 

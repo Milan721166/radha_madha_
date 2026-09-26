@@ -8,6 +8,7 @@ import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 
 import Navbar from './components/Navbar';
+import FestiveCountdownTimer from './components/FestiveCountdownTimer';
 import Footer from './components/Footer';
 import BottomNav from './components/BottomNav';
 
@@ -50,6 +51,7 @@ export default function App() {
                 path="/*"
                 element={
                   <div className="flex flex-col min-h-screen">
+                    <FestiveCountdownTimer />
                     <Navbar />
                     <main className="flex-1">
                       <Routes>

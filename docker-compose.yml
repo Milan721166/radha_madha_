@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: radhamav_backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET:-radhamav_secret_jwt_key_2026}
+      - DATABASE_URL=${DATABASE_URL:-}
+      - DB_HOST=${DB_HOST:-187.127.210.144}
+      - DB_PORT=${DB_PORT:-7947}
+      - DB_USER=${DB_USER:-mysql}
+      - DB_PASSWORD=${DB_PASSWORD:-yFPG3DheUfoCQJmGPlO5k80vVkIDwkrWKjAPMpMk3eU6dMJv7enB32LkLnryaBAa}
+      - DB_NAME=${DB_NAME:-default}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-qxiwsbze}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-525818853834352}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-U5-EW2h8jGXIUjsGobvdhY5mW1g}
+      - APITXT_AUTH_KEY=${APITXT_AUTH_KEY:-3A8KHWrYvAxJAO-w3Tgut04mLS0Nvsx7HjImT62utBg}
+      - APITXT_CHANNEL=${APITXT_CHANNEL:-SMS}
+      - APITXT_ROUTE=${APITXT_ROUTE:-nondlt}
+      - APITXT_MESSAGE_TEMPLATE=${APITXT_MESSAGE_TEMPLATE:-Your verification code for Radhamadv Store is {{otp}}. Valid for 5 minutes. Do not share with anyone.}
+      - APITXT_SENDER=${APITXT_SENDER:-RADMAV}
+      - APITXT_DLT_TE_ID=${APITXT_DLT_TE_ID:-}
+    volumes:
+      - backend_uploads:/app/uploads
+      - sqlite_data:/app/db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: radhamav_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  backend_uploads:
+  sqlite_data:

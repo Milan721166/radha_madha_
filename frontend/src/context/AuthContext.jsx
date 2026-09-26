@@ -77,6 +77,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithOtp = async (phone, otp, name) => {
+    const res = await api.post('/auth/login-otp', { phone, otp, name });
+    if (res.success) {
+      localStorage.setItem('radhamav_token', res.token);
+      setToken(res.token);
+      setUser(res.user);
+      return res;
+    }
+  };
+
+  const sendOtp = async (phone) => {
+    return await api.post('/auth/send-otp', { phone });
+  };
+
+  const verifyOtp = async (phone, otp) => {
+    return await api.post('/auth/verify-otp', { phone, otp });
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -87,6 +105,9 @@ export const AuthProvider = ({ children }) => {
         isAdmin: user?.role === 'admin',
         login,
         register,
+        loginWithOtp,
+        sendOtp,
+        verifyOtp,
         logout,
         fetchProfile,
         saveAddress,

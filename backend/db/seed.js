@@ -8,21 +8,21 @@ async function seedData() {
   console.log('Seeding initial data for Radhamav Fashions...');
 
   // 1. Seed Users (Admin & Customer)
-  const adminPassword = await bcrypt.hash('admin123', 10);
+  const adminPassword = await bcrypt.hash('Milan@7894561230', 10);
   const customerPassword = await bcrypt.hash('customer123', 10);
 
   await dbAsync.run(`
     INSERT INTO users (id, name, email, password_hash, phone, role, status)
     VALUES 
-    (1, 'Radhamav Admin', 'admin@radhamav.com', ?, '+91 9876543210', 'admin', 'active'),
+    (1, 'Milan Radhamav', 'milan@radhamadhav.com', ?, '+91 9876543210', 'admin', 'active'),
     (2, 'Ananya Sharma', 'customer@radhamav.com', ?, '+91 9876543211', 'customer', 'active')
-    ON DUPLICATE KEY UPDATE name=VALUES(name), password_hash=VALUES(password_hash);
+    ON DUPLICATE KEY UPDATE name=VALUES(name), email=VALUES(email), password_hash=VALUES(password_hash);
   `, [adminPassword, customerPassword]);
 
   // 2. Seed Categories
   const categories = [
-    { id: 1, name: 'Sarees', slug: 'sarees', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80', display_order: 1 },
-    { id: 2, name: 'Kurtis', slug: 'kurtis', image: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?auto=format&fit=crop&w=600&q=80', display_order: 2 },
+    { id: 1, name: 'Sarees', slug: 'sarees', image: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80', display_order: 1 },
+    { id: 2, name: 'Kurtis', slug: 'kurtis', image: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?auto=format&fit=crop&w=600&q=80', display_order: 2 },
     { id: 3, name: 'Designer Dresses', slug: 'designer-dresses', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80', display_order: 3 },
     { id: 4, name: 'Salwar Suits', slug: 'salwar-suits', image: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80', display_order: 4 },
     { id: 5, name: 'Lehengas', slug: 'lehengas', image: 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=600&q=80', display_order: 5 },
@@ -62,8 +62,8 @@ async function seedData() {
       rating_avg: 4.9,
       reviews_count: 18,
       images: [
-        'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80'
+        'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80'
       ],
       variants: [
         { size: 'Free Size', color: 'Ruby Red', hex_code: '#900C3F', price: 12999, sale_price: 9499, stock: 15, sku: 'SAR-KAN-001-RED' },
@@ -91,8 +91,8 @@ async function seedData() {
       rating_avg: 4.8,
       reviews_count: 24,
       images: [
-        'https://images.unsplash.com/photo-1583391733956-6c78276477e2?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?auto=format&fit=crop&w=800&q=80'
+        'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80'
       ],
       variants: [
         { size: 'S', color: 'Dusty Pink', hex_code: '#D8A7B1', price: 4999, sale_price: 3499, stock: 10, sku: 'KUR-ANK-002-S' },
@@ -284,7 +284,7 @@ async function seedData() {
       id: 1,
       title: 'Festive Luxury Couture 2026',
       subtitle: 'Flat 20% OFF on Kanjeevaram Sarees & Bridal Lehengas',
-      image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1600&q=80',
+      image: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=1600&q=80',
       button_text: 'Explore Collection',
       button_link: '/shop',
       display_order: 1
@@ -293,7 +293,7 @@ async function seedData() {
       id: 2,
       title: 'Royal Anarkalis & Designer Kurtis',
       subtitle: 'Pure Silk & Handcrafted Chanderi Suits Starting ₹2,499',
-      image: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?auto=format&fit=crop&w=1600&q=80',
+      image: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?auto=format&fit=crop&w=1600&q=80',
       button_text: 'Shop Kurtis',
       button_link: '/shop?category=kurtis',
       display_order: 2
@@ -378,21 +378,80 @@ async function seedData() {
   // 8. Seed Store Settings
   const settings = [
     { key: 'store_name', value: 'Radhamav Fashions' },
-    { key: 'store_email', value: 'support@radhamav.com' },
-    { key: 'store_phone', value: '+91 9876543210' },
-    { key: 'store_address', value: '108 Silk Mill Avenue, Jubilee Hills, Hyderabad, Telangana 500033' },
+    { key: 'store_email', value: 'milan@radhamadhav.com' },
+    { key: 'store_phone', value: '+91 6296740204' },
+    { key: 'store_address', value: 'Sahoo House, 6FFX+RP6, Makrampur - Temathani Rd, Larma, Larma Batitaki, West Bengal 721166' },
     { key: 'free_shipping_min', value: '999' },
     { key: 'standard_shipping_charge', value: '99' },
     { key: 'cod_enabled', value: 'true' },
-    { key: 'gst_number', value: '36AAAAA0000A1Z5' }
+    { key: 'gst_number', value: '36AAAAA0000A1Z5' },
+
+    // Top Announcement Bar Controls
+    { key: 'top_bar_enabled', value: 'true' },
+    { key: 'top_bar_text', value: 'FESTIVE OFFER: FLAT 20% OFF ON KANJEEVARAM SAREES & BRIDAL COLLECTION | FREE EXPRESS SHIPPING' },
+    { key: 'top_bar_bg_color', value: '#121212' },
+    { key: 'top_bar_text_color', value: '#f3e5ab' },
+
+    // Homepage Section Headers Controls
+    { key: 'cat_section_tag', value: 'Curated Collections' },
+    { key: 'cat_section_title', value: 'Explore Couture Categories' },
+    { key: 'cat_section_subtitle', value: 'Discover handcrafted sarees, bridal lehengas, and royal ethnic couture.' },
+
+    { key: 'new_arrivals_tag', value: 'Fresh Drop' },
+    { key: 'new_arrivals_title', value: 'New Arrivals' },
+
+    { key: 'bestsellers_tag', value: 'Customer Favorites' },
+    { key: 'bestsellers_title', value: 'Best Sellers' },
+
+    // Promotional Offer Banner Controls
+    { key: 'promo_banner_enabled', value: 'true' },
+    { key: 'promo_banner_tag', value: 'Festive Season Offer' },
+    { key: 'promo_banner_title', value: 'Flat 20% OFF On Royal Kanjeevaram Sarees' },
+    { key: 'promo_banner_desc', value: 'Use promo code FESTIVE500 at checkout for instant savings.' },
+    { key: 'promo_banner_code', value: 'FESTIVE500' },
+    { key: 'promo_banner_button_text', value: 'Shop Festive Sarees' },
+    { key: 'promo_banner_button_link', value: '/shop?category=sarees' },
+    { key: 'promo_banner_image', value: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80' },
+
+    // Customer Reviews & Newsletter Controls
+    { key: 'reviews_section_tag', value: 'Real Customer Words' },
+    { key: 'reviews_section_title', value: 'Loved By Women Across India' },
+
+    { key: 'newsletter_section_title', value: 'Join Radhamav Couture Club' },
+    { key: 'newsletter_section_subtitle', value: 'Subscribe to get exclusive early access to festive drop collections, private sales, and ₹500 off your first order.' },
+
+    // Footer & Social Links Controls
+    { key: 'footer_bio', value: 'Radhamav Fashions is a premier single-vendor Indian ethnic couture store. Celebrating centuries of handloom silk weaving, royal zari motifs, and modern bridal fashion.' },
+    { key: 'social_instagram', value: 'https://instagram.com' },
+    { key: 'social_facebook', value: 'https://facebook.com' },
+    { key: 'social_youtube', value: 'https://youtube.com' },
+
+    { key: 'value_prop_1_title', value: 'Free Express Shipping' },
+    { key: 'value_prop_1_desc', value: 'On all orders above ₹999 across India' },
+    { key: 'value_prop_2_title', value: '7-Day Easy Returns' },
+    { key: 'value_prop_2_desc', value: 'Hassle-free exchange & refund' },
+    { key: 'value_prop_3_title', value: '100% Handloom Silk' },
+    { key: 'value_prop_3_desc', value: 'Certified authentic silk weave' },
+    { key: 'value_prop_4_title', value: '100% Secure Payment' },
+    { key: 'value_prop_4_desc', value: 'Encrypted UPI, Cards & NetBanking' }
   ];
 
+  const { getEngine } = require('./database');
+  const engine = await getEngine();
+
   for (const s of settings) {
-    await dbAsync.run(`
-      INSERT INTO settings (\`key\`, \`value\`)
-      VALUES (?, ?)
-      ON DUPLICATE KEY UPDATE \`value\`=VALUES(\`value\`);
-    `, [s.key, s.value]);
+    if (engine.type === 'mysql') {
+      await dbAsync.run(`
+        INSERT INTO settings (\`key\`, \`value\`)
+        VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE \`value\`=VALUES(\`value\`);
+      `, [s.key, s.value]);
+    } else {
+      await dbAsync.run(`
+        INSERT OR REPLACE INTO settings (key, value)
+        VALUES (?, ?);
+      `, [s.key, s.value]);
+    }
   }
 
   console.log('MySQL Database seeding completed successfully!');

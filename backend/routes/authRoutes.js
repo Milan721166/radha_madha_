@@ -150,4 +150,205 @@ router.delete('/addresses/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Import OTP Service
+const { sendOtpViaApiTxt } = require('../services/otpService');
+
+// Helper to format phone
+function cleanPhoneNumber(phone) {
+  if (!phone) return '';
+  let cleaned = String(phone).replace(/\D/g, '');
+  if (cleaned.length === 10) cleaned = '91' + cleaned;
+  return cleaned;
+}
+
+// Send OTP via APITxT
+router.post('/send-otp', async (req, res) => {
+  try {
+    const { phone } = req.body;
+    const cleanPhone = cleanPhoneNumber(phone);
+
+    if (!cleanPhone || cleanPhone.length < 10) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid 10-digit mobile number' });
+    }
+
+    // Generate 6-digit numeric OTP
+    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    // Save to database
+    await dbAsync.run(
+      'INSERT INTO otps (phone, otp, expires_at, attempts, verified) VALUES (?, ?, ?, 0, 0)',
+      [cleanPhone, generatedOtp, expiresAt]
+    );
+
+    // Dispatch via APITxT Service
+    const result = await sendOtpViaApiTxt(cleanPhone, generatedOtp);
+
+    res.json({
+      success: true,
+      message: result.message || 'OTP sent successfully',
+      phone: cleanPhone,
+      mode: result.mode
+    });
+  } catch (err) {
+    console.error('Send OTP error:', err);
+    res.status(500).json({ success: false, message: 'Failed to send OTP. Please try again.' });
+  }
+});
+
+// Helper to check if OTP is expired (supports ISO strings & legacy MySQL dates)
+function isOtpExpired(expiresAtStr, createdAtStr) {
+  try {
+    let expTime = 0;
+    if (expiresAtStr) {
+      const normalizedStr = String(expiresAtStr).includes('Z')
+        ? String(expiresAtStr)
+        : String(expiresAtStr).replace(' ', 'T') + 'Z';
+      expTime = new Date(normalizedStr).getTime();
+    }
+    
+    // If valid timestamp comparison
+    if (expTime > 0 && !isNaN(expTime)) {
+      if (Date.now() > expTime) return true;
+    }
+
+    // Fallback using created_at (valid for 10 mins from creation)
+    if (createdAtStr) {
+      const normCreated = String(createdAtStr).includes('Z')
+        ? String(createdAtStr)
+        : String(createdAtStr).replace(' ', 'T') + 'Z';
+      const createdTime = new Date(normCreated).getTime();
+      if (!isNaN(createdTime) && (Date.now() - createdTime) > 10 * 60 * 1000) {
+        return true;
+      }
+    }
+
+    return false;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Verify OTP Code
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { phone, otp } = req.body;
+    const cleanPhone = cleanPhoneNumber(phone);
+    const inputOtp = (otp || '').trim();
+
+    if (!cleanPhone || !inputOtp) {
+      return res.status(400).json({ success: false, message: 'Phone number and OTP code are required' });
+    }
+
+    // Retrieve latest unverified OTP for this phone number
+    const record = await dbAsync.get(
+      'SELECT * FROM otps WHERE phone = ? AND verified = 0 ORDER BY id DESC',
+      [cleanPhone]
+    );
+
+    if (!record) {
+      return res.status(400).json({ success: false, message: 'No active OTP found. Please request a new OTP.' });
+    }
+
+    if (record.attempts >= 5) {
+      return res.status(400).json({ success: false, message: 'Maximum verification attempts exceeded. Please request a new OTP.' });
+    }
+
+    // Check expiration using timezone-aware helper
+    if (isOtpExpired(record.expires_at, record.created_at)) {
+      return res.status(400).json({ success: false, message: 'OTP code has expired. Please request a new one.' });
+    }
+
+    // Check code match
+    if (record.otp === inputOtp) {
+      await dbAsync.run('UPDATE otps SET verified = 1 WHERE id = ?', [record.id]);
+      return res.json({ success: true, message: 'OTP verified successfully' });
+    } else {
+      await dbAsync.run('UPDATE otps SET attempts = attempts + 1 WHERE id = ?', [record.id]);
+      return res.status(400).json({ success: false, message: 'Invalid OTP code. Please check and try again.' });
+    }
+  } catch (err) {
+    console.error('Verify OTP error:', err);
+    res.status(500).json({ success: false, message: 'Error verifying OTP' });
+  }
+});
+
+// Login / Register via Verified OTP
+router.post('/login-otp', async (req, res) => {
+  try {
+    const { phone, otp, name } = req.body;
+    const cleanPhone = cleanPhoneNumber(phone);
+    const inputOtp = (otp || '').trim();
+
+    if (!cleanPhone || !inputOtp) {
+      return res.status(400).json({ success: false, message: 'Phone and OTP are required' });
+    }
+
+    // Verify OTP first
+    const record = await dbAsync.get(
+      'SELECT * FROM otps WHERE phone = ? AND verified = 0 ORDER BY id DESC',
+      [cleanPhone]
+    );
+
+    if (!record) {
+      return res.status(400).json({ success: false, message: 'No active OTP found. Please request a new OTP.' });
+    }
+
+    if (isOtpExpired(record.expires_at, record.created_at)) {
+      return res.status(400).json({ success: false, message: 'OTP has expired.' });
+    }
+
+    if (record.otp !== inputOtp) {
+      await dbAsync.run('UPDATE otps SET attempts = attempts + 1 WHERE id = ?', [record.id]);
+      return res.status(400).json({ success: false, message: 'Invalid OTP code' });
+    }
+
+    // Mark verified
+    await dbAsync.run('UPDATE otps SET verified = 1 WHERE id = ?', [record.id]);
+
+    // Find or Create User
+    let user = await dbAsync.get('SELECT * FROM users WHERE phone = ? OR email = ?', [cleanPhone, `phone_${cleanPhone}@radhamav.com`]);
+
+    if (!user) {
+      const defaultName = name || `User_${cleanPhone.slice(-4)}`;
+      const dummyEmail = `phone_${cleanPhone}@radhamav.com`;
+      const hash = await bcrypt.hash(`OTP_PASS_${Date.now()}`, 10);
+
+      const result = await dbAsync.run(
+        'INSERT INTO users (name, email, password_hash, phone, role) VALUES (?, ?, ?, ?, ?)',
+        [defaultName, dummyEmail, hash, cleanPhone, 'customer']
+      );
+
+      user = { id: result.id, name: defaultName, email: dummyEmail, phone: cleanPhone, role: 'customer' };
+    }
+
+    if (user.status === 'blocked') {
+      return res.status(403).json({ success: false, message: 'Your account has been suspended.' });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, name: user.name, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Login successful via Mobile OTP',
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || cleanPhone,
+        role: user.role
+      }
+    });
+  } catch (err) {
+    console.error('Login OTP error:', err);
+    res.status(500).json({ success: false, message: 'Failed to process mobile login' });
+  }
+});
+
 module.exports = router;
+

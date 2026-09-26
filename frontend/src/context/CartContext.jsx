@@ -61,6 +61,12 @@ export const CartProvider = ({ children }) => {
   };
 
   const addToCart = async (product, variant = null, size = '', color = '', quantity = 1) => {
+    const availableStock = (variant && variant.stock !== undefined) ? variant.stock : product.stock;
+    if (availableStock !== undefined && availableStock <= 0) {
+      showToast(`'${product.name}' is currently out of stock`, 'error');
+      return;
+    }
+
     if (user) {
       try {
         const res = await api.post('/cart/add', {
@@ -84,6 +90,12 @@ export const CartProvider = ({ children }) => {
         i => i.product_id === product.id && i.size === size && i.color === color
       );
 
+      const existingQty = existingIdx > -1 ? localCart[existingIdx].quantity : 0;
+      if (availableStock !== undefined && (existingQty + quantity) > availableStock) {
+        showToast(`Only ${availableStock} unit(s) available in stock`, 'error');
+        return;
+      }
+
       if (existingIdx > -1) {
         localCart[existingIdx].quantity += quantity;
       } else {
@@ -97,6 +109,7 @@ export const CartProvider = ({ children }) => {
           image: product.images?.[0]?.image_url || product.image_url || product.image,
           size: size || variant?.size || '',
           color: color || variant?.color || '',
+          stock: availableStock ?? 999,
           quantity
         });
       }
@@ -109,12 +122,24 @@ export const CartProvider = ({ children }) => {
   };
 
   const updateQuantity = async (itemId, newQty) => {
+    const item = cartItems.find(i => i.id === itemId);
+    const availableStock = item?.variant_stock !== undefined && item?.variant_stock !== null 
+      ? item.variant_stock 
+      : item?.stock;
+
+    if (newQty > 0 && availableStock !== undefined && availableStock !== null && newQty > availableStock) {
+      showToast(`Only ${availableStock} unit(s) available in stock`, 'error');
+      return;
+    }
+
     if (user) {
       try {
-        await api.put(`/cart/items/${itemId}`, { quantity: newQty });
-        fetchCart();
+        const res = await api.put(`/cart/items/${itemId}`, { quantity: newQty });
+        if (res.success) {
+          fetchCart();
+        }
       } catch (err) {
-        showToast('Failed to update quantity', 'error');
+        showToast(err.message || 'Failed to update quantity', 'error');
       }
     } else {
       let localCart = cartItems.map(item => item.id === itemId ? { ...item, quantity: newQty } : item);

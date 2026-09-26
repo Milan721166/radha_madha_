@@ -75,10 +75,14 @@ router.post('/create', authenticateToken, async (req, res) => {
         itemTotal
       ]);
 
-      // Reduce product stock automatically
-      await dbAsync.run('UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?', [item.quantity, item.product_id || item.productId]);
-      if (item.variant_id || item.variantId) {
-        await dbAsync.run('UPDATE product_variants SET stock = MAX(0, stock - ?) WHERE id = ?', [item.quantity, item.variant_id || item.variantId]);
+      // Reduce product stock automatically (ANSI SQL CASE syntax for MySQL & SQLite compatibility)
+      const pId = item.product_id || item.productId;
+      const vId = item.variant_id || item.variantId;
+      const qty = item.quantity || 1;
+
+      await dbAsync.run('UPDATE products SET stock = CASE WHEN stock >= ? THEN stock - ? ELSE 0 END WHERE id = ?', [qty, qty, pId]);
+      if (vId) {
+        await dbAsync.run('UPDATE product_variants SET stock = CASE WHEN stock >= ? THEN stock - ? ELSE 0 END WHERE id = ?', [qty, qty, vId]);
       }
 
       // Log Inventory change

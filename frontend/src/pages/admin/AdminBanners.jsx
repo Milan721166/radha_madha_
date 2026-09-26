@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Image as ImageIcon, Plus, Trash2, X } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import ImageUploader from '../../components/ImageUploader';
 
 export default function AdminBanners() {
   const { showToast } = useToast();
@@ -61,7 +62,7 @@ export default function AdminBanners() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="font-serif text-3xl font-bold text-neutral-900">Homepage Hero Banners</h1>
-          <p className="text-xs text-neutral-500">Manage hero slider images, promotional titles, and CTA links</p>
+          <p className="text-xs text-neutral-500">Manage hero slider images, promotional titles, and CTA links with Cloudinary Uploads</p>
         </div>
         <button
           onClick={() => { setFormData({ title: '', subtitle: '', image: '', button_text: 'Shop Now', button_link: '/shop' }); setShowModal(true); }}
@@ -100,8 +101,15 @@ export default function AdminBanners() {
                 <label className="block text-xs font-semibold mb-1">Subtitle / Offer Description</label>
                 <input type="text" value={formData.subtitle} onChange={e => setFormData({...formData, subtitle: e.target.value})} className="w-full bg-neutral-50 border rounded-xl p-2.5 text-xs outline-none" />
               </div>
+              
+              <ImageUploader
+                label="Banner Image (Cloudinary Direct Upload)"
+                currentImage={formData.image}
+                onUploadSuccess={(url) => setFormData(prev => ({ ...prev, image: url }))}
+              />
+
               <div>
-                <label className="block text-xs font-semibold mb-1">Image URL</label>
+                <label className="block text-xs font-semibold mb-1">Image URL (Or enter manual URL)</label>
                 <input type="url" required value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} className="w-full bg-neutral-50 border rounded-xl p-2.5 text-xs outline-none" />
               </div>
               <div>

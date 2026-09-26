@@ -38,7 +38,7 @@ router.get('/dashboard', async (req, res) => {
       FROM order_items oi
       JOIN orders o ON oi.order_id = o.id
       WHERE o.order_status != 'cancelled'
-      GROUP BY oi.product_id
+      GROUP BY oi.product_id, oi.product_name
       ORDER BY total_sold DESC
       LIMIT 5
     `);
@@ -466,12 +466,21 @@ router.delete('/banners/:id', async (req, res) => {
 router.post('/settings', async (req, res) => {
   try {
     const settings = req.body; // Key-value pair object
+    const { getEngine } = require('../db/database');
+    const engine = await getEngine();
+
     for (const key in settings) {
-      await dbAsync.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [key, String(settings[key])]);
+      const val = String(settings[key] ?? '');
+      if (engine.type === 'mysql') {
+        await dbAsync.run('INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)', [key, val]);
+      } else {
+        await dbAsync.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [key, val]);
+      }
     }
-    res.json({ success: true, message: 'Store settings updated' });
+    res.json({ success: true, message: 'Store settings updated successfully' });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to save settings' });
+    console.error('Save settings error:', err);
+    res.status(500).json({ success: false, message: 'Failed to save store settings' });
   }
 });
 

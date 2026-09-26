@@ -78,20 +78,31 @@ export default function Cart() {
 
                   <div className="flex items-center justify-between pt-2">
                     {/* Quantity Control */}
-                    <div className="flex items-center gap-3 bg-neutral-100 p-1 rounded-xl border border-neutral-200">
-                      <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        className="w-7 h-7 rounded-lg bg-white shadow-sm flex items-center justify-center font-bold text-neutral-700 text-xs"
-                      >
-                        -
-                      </button>
-                      <span className="text-xs font-bold w-6 text-center">{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        className="w-7 h-7 rounded-lg bg-white shadow-sm flex items-center justify-center font-bold text-neutral-700 text-xs"
-                      >
-                        +
-                      </button>
+                    <div>
+                      <div className="flex items-center gap-3 bg-neutral-100 p-1 rounded-xl border border-neutral-200">
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          className="w-7 h-7 rounded-lg bg-white shadow-sm flex items-center justify-center font-bold text-neutral-700 text-xs"
+                        >
+                          -
+                        </button>
+                        <span className="text-xs font-bold w-6 text-center">{item.quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          disabled={item.quantity >= (item.variant_stock ?? item.stock ?? 999)}
+                          className={`w-7 h-7 rounded-lg bg-white shadow-sm flex items-center justify-center font-bold text-xs ${
+                            item.quantity >= (item.variant_stock ?? item.stock ?? 999)
+                              ? 'opacity-40 cursor-not-allowed text-neutral-400'
+                              : 'text-neutral-700 hover:bg-neutral-50'
+                          }`}
+                          title={item.quantity >= (item.variant_stock ?? item.stock ?? 999) ? "Max stock reached" : "Increase quantity"}
+                        >
+                          +
+                        </button>
+                      </div>
+                      {item.quantity >= (item.variant_stock ?? item.stock ?? 999) && (item.stock !== undefined || item.variant_stock !== undefined) && (
+                        <p className="text-[10px] text-amber-700 font-medium mt-1">Max stock ({item.variant_stock ?? item.stock}) reached</p>
+                      )}
                     </div>
 
                     <div className="text-right">

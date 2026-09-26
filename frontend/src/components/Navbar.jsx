@@ -22,6 +22,34 @@ export default function Navbar() {
   const location = useLocation();
   const searchRef = useRef(null);
 
+  const [categoriesNav, setCategoriesNav] = useState([]);
+  const [settings, setSettings] = useState({
+    top_bar_enabled: 'true',
+    top_bar_text: 'Festive Offer: Flat 20% OFF on Kanjeevaram Sarees & Bridal Collection | Free Express Shipping',
+    top_bar_bg_color: '#121212',
+    top_bar_text_color: '#f3e5ab'
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [settingsRes, catRes] = await Promise.all([
+          api.get('/cms/settings'),
+          api.get('/categories')
+        ]);
+        if (settingsRes.success && settingsRes.settings) {
+          setSettings(prev => ({ ...prev, ...settingsRes.settings }));
+        }
+        if (catRes.success && catRes.categories) {
+          setCategoriesNav(catRes.categories);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchData();
+  }, []);
+
   // Close menus on route change
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -63,51 +91,53 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-brand-gold/20 shadow-sm">
       {/* Top Banner Notice */}
-      <div className="bg-brand-obsidian text-brand-champagne py-1.5 px-4 text-center text-xs tracking-wider uppercase flex items-center justify-center gap-2">
-        <Tag className="w-3.5 h-3.5 text-brand-gold" />
-        <span>Festive Offer: Flat 20% OFF on Kanjeevaram Sarees & Bridal Collection | Free Express Shipping</span>
-      </div>
+      {settings.top_bar_enabled === 'true' && (
+        <div
+          style={{ backgroundColor: settings.top_bar_bg_color || '#121212', color: settings.top_bar_text_color || '#f3e5ab' }}
+          className="py-2 px-4 text-center text-xs tracking-wider uppercase flex items-center justify-center gap-2 transition-all leading-normal min-h-[32px]"
+        >
+          <Tag className="w-3.5 h-3.5 text-brand-gold shrink-0" />
+          <span className="truncate max-w-full sm:whitespace-normal">{settings.top_bar_text}</span>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-20 gap-2 lg:gap-4">
           
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-neutral-700 hover:text-brand-maroon focus:outline-none"
+            className="lg:hidden p-2 text-neutral-700 hover:text-brand-maroon focus:outline-none shrink-0"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
 
           {/* Brand Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <img src={logo} alt="Radhamav Fashions Logo" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
-            <div className="flex flex-col">
-              <span className="font-serif font-bold text-xl md:text-2xl tracking-wider text-brand-maroon uppercase">
-                Radhamav
-              </span>
-              <span className="text-[10px] tracking-[0.25em] text-neutral-500 uppercase -mt-1 font-sans font-medium">
-                Fashions
-              </span>
-            </div>
+          <Link to="/" className="flex items-center group shrink-0">
+            <img src={logo} alt="Radhamadhav Fashions Logo" className="h-10 sm:h-12 md:h-14 w-auto object-contain group-hover:scale-105 transition-transform" />
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-8 font-medium text-sm text-neutral-800">
-            <Link to="/" className="hover:text-brand-maroon transition-colors py-1">Home</Link>
-            <Link to="/shop" className="hover:text-brand-maroon transition-colors py-1">Shop All</Link>
-            <Link to="/shop?category=sarees" className="hover:text-brand-maroon transition-colors py-1">Sarees</Link>
-            <Link to="/shop?category=kurtis" className="hover:text-brand-maroon transition-colors py-1">Kurtis</Link>
-            <Link to="/shop?category=lehengas" className="hover:text-brand-maroon font-semibold text-brand-maroon transition-colors py-1">Bridal Lehengas</Link>
-            <Link to="/shop?newArrival=true" className="hover:text-brand-maroon transition-colors py-1">New Arrivals</Link>
-            <Link to="/contact" className="hover:text-brand-maroon transition-colors py-1">Contact</Link>
+          <nav className="hidden lg:flex items-center gap-2.5 xl:gap-5 2xl:gap-7 font-medium text-xs xl:text-sm text-neutral-800 shrink min-w-0">
+            <Link to="/" className="hover:text-brand-maroon transition-colors py-1 shrink-0">Home</Link>
+            <Link to="/shop" className="hover:text-brand-maroon transition-colors py-1 shrink-0">Shop All</Link>
+            {categoriesNav.slice(0, 4).map(cat => (
+              <Link
+                key={cat.id}
+                to={`/shop?category=${cat.slug}`}
+                className="hover:text-brand-maroon transition-colors py-1 shrink-0 truncate max-w-[120px] xl:max-w-none"
+              >
+                {cat.name}
+              </Link>
+            ))}
+            <Link to="/contact" className="hover:text-brand-maroon transition-colors py-1 shrink-0">Contact</Link>
           </nav>
 
           {/* Search Bar & Actions */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-3 xl:gap-4 shrink-0">
             
             {/* Search Bar Input */}
-            <div className="relative hidden md:block w-60 lg:w-72" ref={searchRef}>
+            <div className="relative hidden md:block w-36 lg:w-44 xl:w-60 2xl:w-72" ref={searchRef}>
               <form onSubmit={handleSearchSubmit}>
                 <input
                   type="text"
@@ -115,10 +145,10 @@ export default function Navbar() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => searchQuery.length >= 2 && setShowSearchPopup(true)}
-                  className="w-full bg-neutral-100/80 border border-neutral-200 focus:border-brand-gold rounded-full py-2 pl-4 pr-10 text-sm outline-none transition-all placeholder:text-neutral-400"
+                  className="w-full bg-neutral-100/80 border border-neutral-200 focus:border-brand-gold rounded-full py-1.5 xl:py-2 pl-3 xl:pl-4 pr-9 text-xs xl:text-sm outline-none transition-all placeholder:text-neutral-400"
                 />
                 <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-brand-maroon">
-                  <Search className="w-4 h-4" />
+                  <Search className="w-3.5 h-3.5 xl:w-4 xl:h-4" />
                 </button>
               </form>
 
@@ -271,10 +301,16 @@ export default function Navbar() {
 
           <nav className="flex flex-col gap-2 font-medium text-neutral-800">
             <Link to="/" className="py-2 border-b border-neutral-100">Home</Link>
-            <Link to="/shop" className="py-2 border-b border-neutral-100">Shop Catalog</Link>
-            <Link to="/shop?category=sarees" className="py-2 border-b border-neutral-100">Sarees Collection</Link>
-            <Link to="/shop?category=kurtis" className="py-2 border-b border-neutral-100">Kurtis & Suits</Link>
-            <Link to="/shop?category=lehengas" className="py-2 border-b border-neutral-100 text-brand-maroon font-semibold">Bridal Lehengas</Link>
+            <Link to="/shop" className="py-2 border-b border-neutral-100 font-semibold text-brand-maroon">Shop All Catalog</Link>
+            {categoriesNav.map(cat => (
+              <Link
+                key={cat.id}
+                to={`/shop?category=${cat.slug}`}
+                className="py-2 border-b border-neutral-100"
+              >
+                {cat.name} Collection
+              </Link>
+            ))}
             <Link to="/contact" className="py-2">Contact Us</Link>
           </nav>
         </div>

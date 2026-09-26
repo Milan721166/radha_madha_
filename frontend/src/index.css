@@ -26,9 +26,9 @@
   background: #7A1C1C;
 }
 
-/* Luxury Micro-Animations */
+/* Luxury & Festive Micro-Animations */
 .hero-gradient {
-  background: linear-gradient(135deg, rgba(20,20,20,0.85) 0%, rgba(122,28,28,0.7) 100%);
+  background: linear-gradient(135deg, rgba(20,20,20,0.88) 0%, rgba(122,28,28,0.75) 100%);
 }
 
 .gold-gradient-text {
@@ -40,30 +40,61 @@
 .gold-btn {
   background: linear-gradient(135deg, #D4AF37 0%, #C5A059 100%);
   color: #141414;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
 .gold-btn:hover {
-  background: linear-gradient(135deg, #C5A059 0%, #B8860B 100%);
+  background: linear-gradient(135deg, #E5C158 0%, #C5A059 100%);
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px -5px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 10px 25px -5px rgba(212, 175, 55, 0.5);
 }
 
 .maroon-btn {
   background: linear-gradient(135deg, #7A1C1C 0%, #4A0E0E 100%);
   color: #FFFFFF;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .maroon-btn:hover {
   background: linear-gradient(135deg, #8B1E1E 0%, #5E1212 100%);
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px -5px rgba(122, 28, 28, 0.4);
+  box-shadow: 0 10px 25px -5px rgba(122, 28, 28, 0.5);
 }
 
 /* Glassmorphism Card */
 .glass-card {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+}
+
+/* Gold Glow Hover Effect */
+.gold-glow-hover {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.gold-glow-hover:hover {
+  border-color: rgba(212, 175, 55, 0.8);
+  box-shadow: 0 15px 35px -10px rgba(212, 175, 55, 0.3);
+}
+
+/* Festive Sparkle Particles Animation */
+@keyframes floatGlitter {
+  0% {
+    transform: translateY(0px) rotate(0deg) scale(0.9);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-12px) rotate(180deg) scale(1.15);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(0px) rotate(360deg) scale(0.9);
+    opacity: 0.4;
+  }
+}
+
+.animate-glitter {
+  animation: floatGlitter 4s ease-in-out infinite;
 }
 
 /* Shimmer Skeleton Loader */

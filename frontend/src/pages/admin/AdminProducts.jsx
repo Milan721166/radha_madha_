@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search, X, Check, Image as ImageIcon } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import ImageUploader from '../../components/ImageUploader';
 
 export default function AdminProducts() {
   const { showToast } = useToast();
@@ -275,13 +276,25 @@ export default function AdminProducts() {
                 </div>
               </div>
 
+              <ImageUploader
+                label="Primary Product Image (Cloudinary Direct Upload)"
+                currentImage={formData.image_url_1}
+                onUploadSuccess={(url) => setFormData(prev => ({ ...prev, image_url_1: url }))}
+              />
+
               <div>
-                <label className="block text-xs font-semibold mb-1">Primary Image URL</label>
+                <label className="block text-xs font-semibold mb-1">Primary Image URL (Or enter manual URL)</label>
                 <input type="url" required value={formData.image_url_1} onChange={e => setFormData({...formData, image_url_1: e.target.value})} className="w-full bg-neutral-50 border rounded-xl p-2.5 text-xs outline-none" />
               </div>
 
+              <ImageUploader
+                label="Secondary Hover Image (Cloudinary Direct Upload)"
+                currentImage={formData.image_url_2}
+                onUploadSuccess={(url) => setFormData(prev => ({ ...prev, image_url_2: url }))}
+              />
+
               <div>
-                <label className="block text-xs font-semibold mb-1">Secondary Hover Image URL</label>
+                <label className="block text-xs font-semibold mb-1">Secondary Hover Image URL (Or enter manual URL)</label>
                 <input type="url" value={formData.image_url_2} onChange={e => setFormData({...formData, image_url_2: e.target.value})} className="w-full bg-neutral-50 border rounded-xl p-2.5 text-xs outline-none" />
               </div>
 

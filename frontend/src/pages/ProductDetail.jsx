@@ -186,7 +186,11 @@ export default function ProductDetail() {
               </div>
               <span className="text-xs text-neutral-400">({product.reviews_count || 18} Verified Customer Reviews)</span>
               <span className="text-xs text-neutral-300">•</span>
-              <span className="text-xs font-bold text-emerald-600">In Stock ({product.stock || 25} units available)</span>
+              {(product.stock ?? 0) > 0 ? (
+                <span className="text-xs font-bold text-emerald-600">In Stock ({product.stock} units available)</span>
+              ) : (
+                <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">Out of Stock</span>
+              )}
             </div>
           </div>
 
@@ -242,18 +246,23 @@ export default function ProductDetail() {
             <div className="flex items-center gap-4 w-36 bg-neutral-100 p-1.5 rounded-2xl border border-neutral-200">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center font-bold text-neutral-700 hover:bg-neutral-50"
+                disabled={(product.stock ?? 0) <= 0}
+                className="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
               >
                 -
               </button>
-              <span className="flex-1 text-center font-bold text-sm">{quantity}</span>
+              <span className="flex-1 text-center font-bold text-sm">{(product.stock ?? 0) <= 0 ? 0 : quantity}</span>
               <button
-                onClick={() => setQuantity(quantity + 1)}
-                className="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center font-bold text-neutral-700 hover:bg-neutral-50"
+                onClick={() => setQuantity(Math.min(product.stock || 1, quantity + 1))}
+                disabled={(product.stock ?? 0) <= 0 || quantity >= (product.stock || 0)}
+                className="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 +
               </button>
             </div>
+            {quantity >= (product.stock || 0) && (product.stock ?? 0) > 0 && (
+              <p className="text-[11px] text-amber-700 font-medium">Maximum available stock ({product.stock}) selected</p>
+            )}
           </div>
 
           {/* CTA Buttons */}
@@ -261,14 +270,25 @@ export default function ProductDetail() {
             <div className="flex gap-4">
               <button
                 onClick={handleAddToCart}
-                className="flex-1 maroon-btn py-4 rounded-2xl font-semibold text-sm shadow-xl flex items-center justify-center gap-2"
+                disabled={(product.stock ?? 0) <= 0}
+                className={`flex-1 py-4 rounded-2xl font-semibold text-sm shadow-xl flex items-center justify-center gap-2 transition-all ${
+                  (product.stock ?? 0) <= 0
+                    ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed shadow-none'
+                    : 'maroon-btn'
+                }`}
               >
-                <ShoppingBag className="w-4 h-4" /> Add to Cart
+                <ShoppingBag className="w-4 h-4" />
+                {(product.stock ?? 0) <= 0 ? 'Out of Stock' : 'Add to Cart'}
               </button>
 
               <button
                 onClick={handleBuyNow}
-                className="flex-1 gold-btn py-4 rounded-2xl font-semibold text-sm shadow-xl flex items-center justify-center gap-2"
+                disabled={(product.stock ?? 0) <= 0}
+                className={`flex-1 py-4 rounded-2xl font-semibold text-sm shadow-xl flex items-center justify-center gap-2 transition-all ${
+                  (product.stock ?? 0) <= 0
+                    ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed shadow-none'
+                    : 'gold-btn'
+                }`}
               >
                 Buy Now
               </button>

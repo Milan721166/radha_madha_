@@ -23,7 +23,7 @@ export default function HeroSlider() {
             id: 1,
             title: 'Festive Luxury Couture 2026',
             subtitle: 'Flat 20% OFF on Kanjeevaram Sarees & Bridal Lehengas',
-            image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1600&q=80',
+            image: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=1600&q=80',
             button_text: 'Explore Collection',
             button_link: '/shop'
           }

@@ -64,6 +64,23 @@ router.post('/add', authenticateToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Product ID is required' });
     }
 
+    const product = await dbAsync.get('SELECT id, stock, status FROM products WHERE id = ?', [productId]);
+    if (!product || product.status !== 'published') {
+      return res.status(404).json({ success: false, message: 'Product is currently unavailable' });
+    }
+
+    let availableStock = product.stock;
+    if (variantId) {
+      const variant = await dbAsync.get('SELECT id, stock FROM product_variants WHERE id = ?', [variantId]);
+      if (variant) {
+        availableStock = variant.stock;
+      }
+    }
+
+    if (availableStock <= 0) {
+      return res.status(400).json({ success: false, message: 'This item is currently out of stock' });
+    }
+
     const cartId = await getOrCreateCartId(req.user.id);
 
     // Check if item already exists in cart with same size/color
@@ -71,6 +88,14 @@ router.post('/add', authenticateToken, async (req, res) => {
       SELECT id, quantity FROM cart_items 
       WHERE cart_id = ? AND product_id = ? AND (variant_id = ? OR (size = ? AND color = ?))
     `, [cartId, productId, variantId || 0, size || '', color || '']);
+
+    const currentQty = existing ? existing.quantity : 0;
+    if (currentQty + quantity > availableStock) {
+      return res.status(400).json({
+        success: false,
+        message: `Only ${availableStock} unit(s) available in stock. (You already have ${currentQty} in cart)`
+      });
+    }
 
     if (existing) {
       await dbAsync.run('UPDATE cart_items SET quantity = quantity + ? WHERE id = ?', [quantity, existing.id]);
@@ -94,9 +119,33 @@ router.put('/items/:id', authenticateToken, async (req, res) => {
     const { quantity } = req.body;
     if (quantity <= 0) {
       await dbAsync.run('DELETE FROM cart_items WHERE id = ?', [req.params.id]);
-    } else {
-      await dbAsync.run('UPDATE cart_items SET quantity = ? WHERE id = ?', [quantity, req.params.id]);
+      return res.json({ success: true, message: 'Item removed from cart' });
     }
+
+    const item = await dbAsync.get(`
+      SELECT ci.id, ci.product_id, ci.variant_id, p.stock as product_stock, pv.stock as variant_stock
+      FROM cart_items ci
+      JOIN products p ON ci.product_id = p.id
+      LEFT JOIN product_variants pv ON ci.variant_id = pv.id
+      WHERE ci.id = ?
+    `, [req.params.id]);
+
+    if (!item) {
+      return res.status(404).json({ success: false, message: 'Cart item not found' });
+    }
+
+    const availableStock = (item.variant_id && item.variant_stock !== null && item.variant_stock !== undefined)
+      ? item.variant_stock 
+      : item.product_stock;
+
+    if (quantity > availableStock) {
+      return res.status(400).json({
+        success: false,
+        message: `Only ${availableStock} unit(s) available in stock.`
+      });
+    }
+
+    await dbAsync.run('UPDATE cart_items SET quantity = ? WHERE id = ?', [quantity, req.params.id]);
     res.json({ success: true, message: 'Cart updated' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to update cart item' });

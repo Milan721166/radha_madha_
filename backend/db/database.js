@@ -385,6 +385,16 @@ const initDatabase = async () => {
       \`key\` VARCHAR(100) UNIQUE NOT NULL,
       \`value\` TEXT NOT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS otps (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      phone VARCHAR(50) NOT NULL,
+      otp VARCHAR(10) NOT NULL,
+      expires_at DATETIME NOT NULL,
+      attempts INT DEFAULT 0,
+      verified TINYINT DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `;
 
   const sqliteSchema = `
@@ -631,6 +641,16 @@ const initDatabase = async () => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       key TEXT UNIQUE NOT NULL,
       value TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS otps (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      phone TEXT NOT NULL,
+      otp TEXT NOT NULL,
+      expires_at DATETIME NOT NULL,
+      attempts INTEGER DEFAULT 0,
+      verified INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `;
 
