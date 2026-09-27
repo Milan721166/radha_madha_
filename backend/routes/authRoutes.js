@@ -173,7 +173,8 @@ router.post('/send-otp', async (req, res) => {
 
     // Generate 6-digit numeric OTP
     const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    // Format to standard MySQL/SQLite DATETIME string: YYYY-MM-DD HH:mm:ss
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
 
     // Save to database
     await dbAsync.run(
@@ -196,30 +197,45 @@ router.post('/send-otp', async (req, res) => {
   }
 });
 
-// Helper to check if OTP is expired (supports ISO strings & legacy MySQL dates)
-function isOtpExpired(expiresAtStr, createdAtStr) {
+// Helper to check if OTP is expired (supports Date objects, ISO strings & MySQL dates)
+function isOtpExpired(expiresAtVal, createdAtVal) {
   try {
     let expTime = 0;
-    if (expiresAtStr) {
-      const normalizedStr = String(expiresAtStr).includes('Z')
-        ? String(expiresAtStr)
-        : String(expiresAtStr).replace(' ', 'T') + 'Z';
-      expTime = new Date(normalizedStr).getTime();
+    if (expiresAtVal instanceof Date) {
+      expTime = expiresAtVal.getTime();
+    } else if (typeof expiresAtVal === 'number') {
+      expTime = expiresAtVal;
+    } else if (expiresAtVal) {
+      const str = String(expiresAtVal).trim();
+      const normalizedStr = str.includes('T')
+        ? (str.endsWith('Z') ? str : str + 'Z')
+        : str.replace(' ', 'T') + 'Z';
+      const parsed = new Date(normalizedStr);
+      expTime = !isNaN(parsed.getTime()) ? parsed.getTime() : new Date(str).getTime();
     }
     
     // If valid timestamp comparison
     if (expTime > 0 && !isNaN(expTime)) {
-      if (Date.now() > expTime) return true;
+      return Date.now() > expTime;
     }
 
     // Fallback using created_at (valid for 10 mins from creation)
-    if (createdAtStr) {
-      const normCreated = String(createdAtStr).includes('Z')
-        ? String(createdAtStr)
-        : String(createdAtStr).replace(' ', 'T') + 'Z';
-      const createdTime = new Date(normCreated).getTime();
-      if (!isNaN(createdTime) && (Date.now() - createdTime) > 10 * 60 * 1000) {
-        return true;
+    if (createdAtVal) {
+      let createdTime = 0;
+      if (createdAtVal instanceof Date) {
+        createdTime = createdAtVal.getTime();
+      } else if (typeof createdAtVal === 'number') {
+        createdTime = createdAtVal;
+      } else {
+        const str = String(createdAtVal).trim();
+        const normCreated = str.includes('T')
+          ? (str.endsWith('Z') ? str : str + 'Z')
+          : str.replace(' ', 'T') + 'Z';
+        const parsed = new Date(normCreated);
+        createdTime = !isNaN(parsed.getTime()) ? parsed.getTime() : new Date(str).getTime();
+      }
+      if (createdTime > 0 && !isNaN(createdTime)) {
+        return (Date.now() - createdTime) > 10 * 60 * 1000;
       }
     }
 

@@ -24,7 +24,7 @@ async function getEngine() {
 
   // Attempt MySQL connection using connection string or credentials
   try {
-    const config = DATABASE_URL ? { uri: DATABASE_URL, multipleStatements: true, connectTimeout: 10000 } : {
+    const config = DATABASE_URL ? { uri: DATABASE_URL, multipleStatements: true, connectTimeout: 10000, dateStrings: true } : {
       host: DB_HOST,
       port: Number(DB_PORT),
       user: DB_USER,
@@ -33,7 +33,8 @@ async function getEngine() {
       waitForConnections: true,
       connectionLimit: 10,
       connectTimeout: 10000,
-      multipleStatements: true
+      multipleStatements: true,
+      dateStrings: true
     };
 
     mysqlPool = mysql.createPool(config);
