@@ -111,7 +111,7 @@ export default function AdminCategories() {
 
               <div>
                 <label className="block text-xs font-semibold mb-1">Cover Image URL (Or enter manual URL)</label>
-                <input type="url" required value={image} onChange={e => setImage(e.target.value)} className="w-full bg-neutral-50 border rounded-xl p-2.5 text-xs outline-none" />
+                <input type="text" required value={image} onChange={e => setImage(e.target.value)} placeholder="https://... or /uploads/..." className="w-full bg-neutral-50 border rounded-xl p-2.5 text-xs outline-none" />
               </div>
               <button type="submit" className="w-full maroon-btn py-3 rounded-full text-xs font-semibold uppercase">Save Category</button>
             </form>

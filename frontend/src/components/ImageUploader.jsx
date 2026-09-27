@@ -18,27 +18,32 @@ export default function ImageUploader({ onUploadSuccess, currentImage, label = "
     }
 
     try {
+      // Instant local preview
+      setPreview(URL.createObjectURL(file));
       setUploading(true);
+
       const formData = new FormData();
       formData.append('file', file);
 
-      // Upload via backend API to Cloudinary
+      // Upload via backend API
       const res = await api.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 45000
       });
 
       if (res.success && res.url) {
         setPreview(res.url);
         if (onUploadSuccess) onUploadSuccess(res.url);
-        showToast('Image uploaded to Cloudinary!', 'success');
+        showToast('Image uploaded successfully!', 'success');
       } else {
         showToast(res.message || 'Upload failed', 'error');
       }
     } catch (err) {
       console.error('Upload error:', err);
-      showToast(err.message || 'Failed to upload image to Cloudinary', 'error');
+      showToast(err.message || 'Failed to upload image. You can also paste an image URL directly.', 'error');
     } finally {
       setUploading(false);
+      if (e.target) e.target.value = '';
     }
   };
 

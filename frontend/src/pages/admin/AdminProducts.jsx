@@ -284,7 +284,7 @@ export default function AdminProducts() {
 
               <div>
                 <label className="block text-xs font-semibold mb-1">Primary Image URL (Or enter manual URL)</label>
-                <input type="url" required value={formData.image_url_1} onChange={e => setFormData({...formData, image_url_1: e.target.value})} className="w-full bg-neutral-50 border rounded-xl p-2.5 text-xs outline-none" />
+                <input type="text" required value={formData.image_url_1} onChange={e => setFormData({...formData, image_url_1: e.target.value})} placeholder="https://... or /uploads/..." className="w-full bg-neutral-50 border rounded-xl p-2.5 text-xs outline-none" />
               </div>
 
               <ImageUploader
@@ -295,7 +295,7 @@ export default function AdminProducts() {
 
               <div>
                 <label className="block text-xs font-semibold mb-1">Secondary Hover Image URL (Or enter manual URL)</label>
-                <input type="url" value={formData.image_url_2} onChange={e => setFormData({...formData, image_url_2: e.target.value})} className="w-full bg-neutral-50 border rounded-xl p-2.5 text-xs outline-none" />
+                <input type="text" value={formData.image_url_2} onChange={e => setFormData({...formData, image_url_2: e.target.value})} placeholder="https://... or /uploads/..." className="w-full bg-neutral-50 border rounded-xl p-2.5 text-xs outline-none" />
               </div>
 
               <div className="flex items-center gap-6 pt-2 text-xs font-semibold">

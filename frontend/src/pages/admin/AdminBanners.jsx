@@ -110,7 +110,7 @@ export default function AdminBanners() {
 
               <div>
                 <label className="block text-xs font-semibold mb-1">Image URL (Or enter manual URL)</label>
-                <input type="url" required value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} className="w-full bg-neutral-50 border rounded-xl p-2.5 text-xs outline-none" />
+                <input type="text" required value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} placeholder="https://... or /uploads/..." className="w-full bg-neutral-50 border rounded-xl p-2.5 text-xs outline-none" />
               </div>
               <div>
                 <label className="block text-xs font-semibold mb-1">Button CTA Text</label>
