@@ -15,7 +15,7 @@ export default function AdminSettings() {
     store_email: 'support@radhamav.com',
     store_phone: '+91 6296740204, 7477438769',
     store_address: 'Sahoo House, 6FFX+RP6, Makrampur - Temathani Rd, Larma, Larma Batitaki, West Bengal 721166',
-    gst_number: '36AAAAA0000A1Z5',
+    gst_number: '',
 
     // Top Bar
     top_bar_enabled: 'true',

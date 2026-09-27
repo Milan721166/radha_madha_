@@ -384,7 +384,7 @@ async function seedData() {
     { key: 'free_shipping_min', value: '999' },
     { key: 'standard_shipping_charge', value: '99' },
     { key: 'cod_enabled', value: 'true' },
-    { key: 'gst_number', value: '36AAAAA0000A1Z5' },
+    { key: 'gst_number', value: '' },
 
     // Top Announcement Bar Controls
     { key: 'top_bar_enabled', value: 'true' },

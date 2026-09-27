@@ -10,7 +10,7 @@ export default function Footer() {
     store_email: 'support@radhamav.com',
     store_phone: '+91 6296740204',
     store_address: 'Sahoo House, 6FFX+RP6, Makrampur - Temathani Rd, Larma, Larma Batitaki, West Bengal 721166',
-    gst_number: '36AAAAA0000A1Z5',
+    gst_number: '',
     footer_bio: 'Radhamav Fashions is a premier single-vendor Indian ethnic couture store. Celebrating centuries of handloom silk weaving, royal zari motifs, and modern bridal fashion.',
     social_instagram: 'https://instagram.com',
     social_facebook: 'https://facebook.com',
@@ -164,7 +164,7 @@ export default function Footer() {
 
       {/* Footer Bottom Line */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-neutral-800 flex flex-col md:flex-row items-center justify-between text-xs text-neutral-500 gap-4">
-        <p>© 2026 {settings.store_name}. All Rights Reserved. GSTIN: {settings.gst_number}.</p>
+        <p>© 2026 {settings.store_name}. All Rights Reserved.</p>
         <div className="flex items-center gap-4 text-neutral-400">
           <span>UPI / GPay</span>
           <span>•</span>
