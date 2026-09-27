@@ -14,8 +14,8 @@ export default function AdminLayout() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Admin Login State
-  const [email, setEmail] = useState('milan@radhamadhav.com');
-  const [password, setPassword] = useState('Milan@7894561230');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
 
   const handleAdminLogin = async (e) => {
@@ -72,11 +72,6 @@ export default function AdminLayout() {
               />
             </div>
 
-            <div className="bg-brand-champagne/40 p-3 rounded-xl border border-brand-gold/30 text-[11px] text-neutral-700 space-y-0.5">
-              <p className="font-bold text-brand-maroon">Default Admin Credentials:</p>
-              <p>• Email: <span className="font-mono font-bold">milan@radhamadhav.com</span></p>
-              <p>• Password: <span className="font-mono font-bold">Milan@7894561230</span></p>
-            </div>
 
             <button
               type="submit"
