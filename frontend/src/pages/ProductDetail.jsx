@@ -334,22 +334,56 @@ export default function ProductDetail() {
           Product Details & Specifications
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-sm text-neutral-700">
-          <div>
-            <h4 className="font-semibold text-brand-maroon uppercase tracking-wider text-xs mb-2">Material & Weave</h4>
-            <p className="text-neutral-600">{product.material || '100% Pure Silk'}</p>
-            <p className="text-neutral-600 mt-1">{product.fabric || 'Handwoven Kanjeevaram with Real Zari'}</p>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-1 text-sm">
+          {[
+            ['Brand', product.brand],
+            ['Color', product.color],
+            ['Fabric', product.fabric],
+            ['Material', product.material],
+            ['Pattern', product.pattern],
+            ['Fit / Shape', product.fit_shape],
+            ['Neck', product.neck],
+            ['Sleeve Length', product.sleeve_length],
+            ['Length', product.length],
+            ['Occasion', product.occasion],
+            ['Stitch Type', product.stitch_type],
+            ['HSN Code', product.hsn_code],
+            ['GST Rate', product.gst_rate ? `${product.gst_rate}%` : null],
+            ['Product Weight', product.product_weight ? `${product.product_weight}g` : null],
+            ['Country of Origin', product.country_of_origin],
+            ['Manufacturer', product.manufacturer_name],
+            ['Care Instructions', product.care_instructions],
+          ].filter(([, val]) => val && val !== '').map(([label, val]) => (
+            <div key={label} className="flex justify-between py-2.5 border-b border-neutral-50">
+              <span className="font-semibold text-neutral-500 text-xs uppercase tracking-wider">{label}</span>
+              <span className="text-neutral-800 font-medium text-right max-w-[60%]">{val}</span>
+            </div>
+          ))}
+        </div>
 
-          <div>
-            <h4 className="font-semibold text-brand-maroon uppercase tracking-wider text-xs mb-2">Care Instructions</h4>
-            <p className="text-neutral-600">{product.care_instructions || 'Dry Clean Only. Keep stored in cotton cover.'}</p>
+        {product.manufacturer_address && (
+          <div className="pt-2 text-xs text-neutral-500">
+            <span className="font-semibold uppercase tracking-wider">Manufacturer Address: </span>
+            <span className="text-neutral-700">{product.manufacturer_address}</span>
           </div>
+        )}
 
-          <div>
-            <h4 className="font-semibold text-brand-maroon uppercase tracking-wider text-xs mb-2">Shipping & Returns</h4>
-            <p className="text-neutral-600">Dispatched within 24 hours. Express shipping takes 3-5 business days across India.</p>
+        {/* Tags */}
+        {product.tags && (
+          <div className="pt-2 flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Tags:</span>
+            {product.tags.split(',').map((tag, i) => (
+              <span key={i} className="text-[11px] bg-brand-champagne/60 text-brand-maroon font-medium px-3 py-1 rounded-full border border-brand-gold/20">
+                {tag.trim()}
+              </span>
+            ))}
           </div>
+        )}
+
+        {/* Shipping */}
+        <div className="pt-4 border-t border-neutral-100">
+          <h4 className="font-semibold text-brand-maroon uppercase tracking-wider text-xs mb-2">Shipping & Returns</h4>
+          <p className="text-neutral-600 text-sm">Dispatched within 24 hours. Express shipping takes 3-5 business days across India.</p>
         </div>
       </div>
 

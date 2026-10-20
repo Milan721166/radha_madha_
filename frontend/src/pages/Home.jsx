@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, Star, Tag, Send } from 'lucide-react';
+import { ArrowRight, Sparkles, Star, Tag, Send, ChevronLeft, ChevronRight } from 'lucide-react';
 import HeroSlider from '../components/HeroSlider';
 import ProductCard from '../components/ProductCard';
 import QuickViewModal from '../components/QuickViewModal';
@@ -43,6 +43,31 @@ export default function Home() {
   const [quickViewProduct, setQuickViewProduct] = useState(null);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState('');
+
+  const categoryScrollRef = useRef(null);
+  const [isCatPaused, setIsCatPaused] = useState(false);
+
+  const scrollCategories = (direction) => {
+    if (categoryScrollRef.current) {
+      const scrollAmount = direction === 'left' ? -320 : 320;
+      categoryScrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  useEffect(() => {
+    if (isCatPaused || categories.length <= 3) return;
+    const interval = setInterval(() => {
+      if (categoryScrollRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = categoryScrollRef.current;
+        if (scrollLeft + clientWidth >= scrollWidth - 10) {
+          categoryScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          categoryScrollRef.current.scrollBy({ left: 280, behavior: 'smooth' });
+        }
+      }
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isCatPaused, categories]);
 
   useEffect(() => {
     fetchHomeData();
@@ -123,43 +148,86 @@ export default function Home() {
       {/* Hero Banner Slider */}
       <HeroSlider />
 
-      {/* Categories Grid */}
+      {/* Categories Horizontal Carousel */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-xl mx-auto mb-10 space-y-2">
-          <span className="text-xs font-semibold text-brand-gold uppercase tracking-widest font-serif">
-            {settings.cat_section_tag}
-          </span>
-          <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900">
-            {settings.cat_section_title}
-          </h2>
-          <p className="text-sm text-neutral-500">
-            {settings.cat_section_subtitle}
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+          <div className="space-y-1 max-w-xl">
+            <span className="text-xs font-semibold text-brand-gold uppercase tracking-widest font-serif">
+              {settings.cat_section_tag}
+            </span>
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900">
+              {settings.cat_section_title}
+            </h2>
+            <p className="text-sm text-neutral-500">
+              {settings.cat_section_subtitle}
+            </p>
+          </div>
+
+          {/* Navigation Controls */}
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <button
+              onClick={() => scrollCategories('left')}
+              className="w-10 h-10 rounded-full border border-neutral-300 bg-white hover:border-brand-maroon hover:bg-brand-maroon hover:text-white flex items-center justify-center transition-all shadow-sm active:scale-95"
+              aria-label="Scroll categories left"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => scrollCategories('right')}
+              className="w-10 h-10 rounded-full border border-neutral-300 bg-white hover:border-brand-maroon hover:bg-brand-maroon hover:text-white flex items-center justify-center transition-all shadow-sm active:scale-95"
+              aria-label="Scroll categories right"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {categories.map((cat) => (
-            <Link
-              key={cat.id}
-              to={`/shop?category=${cat.slug}`}
-              className="group relative aspect-[4/5] rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500"
-            >
-              <img
-                src={cat.image}
-                alt={cat.name}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-neutral-900/20 to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4 text-center">
-                <h3 className="font-serif font-bold text-lg md:text-xl text-white group-hover:text-brand-gold transition-colors">
+        {/* Carousel Viewport with Floating Buttons */}
+        <div className="relative group/carousel">
+          <button
+            onClick={() => scrollCategories('left')}
+            className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white/95 text-neutral-800 shadow-xl border border-brand-gold/30 items-center justify-center opacity-0 group-hover/carousel:opacity-100 hover:bg-brand-maroon hover:text-white hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+            aria-label="Scroll categories left"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={() => scrollCategories('right')}
+            className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white/95 text-neutral-800 shadow-xl border border-brand-gold/30 items-center justify-center opacity-0 group-hover/carousel:opacity-100 hover:bg-brand-maroon hover:text-white hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+            aria-label="Scroll categories right"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
+          <div
+            ref={categoryScrollRef}
+            onMouseEnter={() => setIsCatPaused(true)}
+            onMouseLeave={() => setIsCatPaused(false)}
+            onTouchStart={() => setIsCatPaused(true)}
+            className="flex items-center gap-5 sm:gap-7 md:gap-8 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory py-4 px-2"
+          >
+            {categories.map((cat) => (
+              <Link
+                key={cat.id}
+                to={`/shop?category=${cat.slug}`}
+                className="shrink-0 flex flex-col items-center group snap-start focus:outline-none"
+              >
+                <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-full p-1 border-2 border-brand-gold/50 group-hover:border-brand-maroon transition-all duration-300 shadow-sm group-hover:shadow-xl group-hover:scale-105 bg-white">
+                  <div className="w-full h-full rounded-full overflow-hidden bg-neutral-100">
+                    <img
+                      src={cat.image}
+                      alt={cat.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  </div>
+                </div>
+                <h3 className="font-serif font-semibold text-xs sm:text-sm md:text-base text-neutral-900 group-hover:text-brand-maroon transition-colors mt-3 text-center max-w-[130px] line-clamp-1">
                   {cat.name}
                 </h3>
-                <p className="text-xs text-neutral-300 font-light mt-0.5">
-                  {cat.product_count || 12}+ Designs
-                </p>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 

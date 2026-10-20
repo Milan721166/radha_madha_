@@ -7,7 +7,6 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const { initDatabase } = require('./db/database');
-const seedData = require('./db/seed');
 
 // Import Routes
 const authRoutes = require('./routes/authRoutes');
@@ -66,11 +65,10 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Initialize Database & Seed initial data, then start server
+// Initialize Database, then start server
 async function startServer() {
   try {
     await initDatabase();
-    await seedData();
     app.listen(PORT, () => {
       console.log(`====================================================`);
       console.log(`🚀 Radhamav Fashions API Server running on port ${PORT}`);

@@ -101,47 +101,68 @@ router.get('/products', async (req, res) => {
 router.post('/products', async (req, res) => {
   try {
     const {
-      id, name, sku, category_id, short_desc, description,
+      id, name, sku, category_id, brand, short_desc, description,
+      color, pattern, fit_shape, neck, sleeve_length, length, occasion, stitch_type,
       price, sale_price, cost_price, stock, low_stock_threshold,
-      material, fabric, care_instructions, is_featured, is_bestseller,
-      is_new_arrival, status, images, variants
+      gst_rate, hsn_code, product_weight,
+      material, fabric, care_instructions,
+      country_of_origin, manufacturer_name, manufacturer_address,
+      is_featured, is_bestseller, is_new_arrival, status,
+      seo_title, seo_description, url_slug, tags,
+      images, variants
     } = req.body;
 
     if (!name || !sku || !category_id || !price) {
       return res.status(400).json({ success: false, message: 'Name, SKU, category and price are required' });
     }
 
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const slug = (url_slug || name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     let productId = id;
 
     if (id) {
       await dbAsync.run(`
         UPDATE products SET 
-          name=?, slug=?, sku=?, category_id=?, short_desc=?, description=?,
+          name=?, slug=?, sku=?, category_id=?, brand=?, short_desc=?, description=?,
+          color=?, pattern=?, fit_shape=?, neck=?, sleeve_length=?, length=?, occasion=?, stitch_type=?,
           price=?, sale_price=?, cost_price=?, stock=?, low_stock_threshold=?,
-          material=?, fabric=?, care_instructions=?, is_featured=?, is_bestseller=?,
-          is_new_arrival=?, status=?
+          gst_rate=?, hsn_code=?, product_weight=?,
+          material=?, fabric=?, care_instructions=?,
+          country_of_origin=?, manufacturer_name=?, manufacturer_address=?,
+          is_featured=?, is_bestseller=?, is_new_arrival=?, status=?,
+          seo_title=?, seo_description=?, url_slug=?, tags=?
         WHERE id=?
       `, [
-        name, slug, sku, category_id, short_desc || '', description || '',
+        name, slug, sku, category_id, brand || '', short_desc || '', description || '',
+        color || '', pattern || '', fit_shape || '', neck || '', sleeve_length || '', length || '', occasion || '', stitch_type || '',
         price, sale_price || null, cost_price || null, stock || 0, low_stock_threshold || 5,
+        gst_rate || null, hsn_code || '', product_weight || null,
         material || '', fabric || '', care_instructions || '',
+        country_of_origin || 'India', manufacturer_name || '', manufacturer_address || '',
         is_featured ? 1 : 0, is_bestseller ? 1 : 0, is_new_arrival ? 1 : 0, status || 'published',
+        seo_title || '', seo_description || '', slug, tags || '',
         id
       ]);
     } else {
       const result = await dbAsync.run(`
         INSERT INTO products (
-          name, slug, sku, category_id, short_desc, description,
+          name, slug, sku, category_id, brand, short_desc, description,
+          color, pattern, fit_shape, neck, sleeve_length, length, occasion, stitch_type,
           price, sale_price, cost_price, stock, low_stock_threshold,
-          material, fabric, care_instructions, is_featured, is_bestseller,
-          is_new_arrival, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          gst_rate, hsn_code, product_weight,
+          material, fabric, care_instructions,
+          country_of_origin, manufacturer_name, manufacturer_address,
+          is_featured, is_bestseller, is_new_arrival, status,
+          seo_title, seo_description, url_slug, tags
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
-        name, slug, sku, category_id, short_desc || '', description || '',
+        name, slug, sku, category_id, brand || '', short_desc || '', description || '',
+        color || '', pattern || '', fit_shape || '', neck || '', sleeve_length || '', length || '', occasion || '', stitch_type || '',
         price, sale_price || null, cost_price || null, stock || 0, low_stock_threshold || 5,
+        gst_rate || null, hsn_code || '', product_weight || null,
         material || '', fabric || '', care_instructions || '',
-        is_featured ? 1 : 0, is_bestseller ? 1 : 0, is_new_arrival ? 1 : 0, status || 'published'
+        country_of_origin || 'India', manufacturer_name || '', manufacturer_address || '',
+        is_featured ? 1 : 0, is_bestseller ? 1 : 0, is_new_arrival ? 1 : 0, status || 'published',
+        seo_title || '', seo_description || '', slug, tags || ''
       ]);
       productId = result.id;
     }

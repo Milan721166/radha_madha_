@@ -435,10 +435,16 @@ export default function Account() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="border-b border-neutral-100 pb-4">
-              <span className="text-xs text-brand-gold uppercase font-bold tracking-widest font-serif">Official Invoice</span>
-              <h2 className="font-serif text-2xl font-bold text-neutral-900">Order #{selectedOrder.order_number}</h2>
-              <p className="text-xs text-neutral-500">Date: {new Date(selectedOrder.created_at).toLocaleString()}</p>
+            <div className="border-b border-neutral-100 pb-4 flex justify-between items-start">
+              <div>
+                <span className="text-xs text-brand-gold uppercase font-bold tracking-widest font-serif">Official Tax Invoice</span>
+                <h2 className="font-serif text-2xl font-bold text-neutral-900">Order #{selectedOrder.order_number}</h2>
+                <p className="text-xs text-neutral-500">Date: {new Date(selectedOrder.created_at).toLocaleString()}</p>
+              </div>
+              <div className="text-right text-xs">
+                <p className="font-bold text-neutral-900">Radhamav Fashions</p>
+                <p className="text-neutral-600 font-mono text-[11px] mt-0.5">GSTIN: <span className="font-semibold text-neutral-800">19OJLPS4550M1Z2</span></p>
+              </div>
             </div>
 
             <div className="space-y-3 text-xs">

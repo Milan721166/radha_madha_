@@ -26,6 +26,16 @@
   background: #7A1C1C;
 }
 
+/* Hide scrollbar for clean carousels */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+
 /* Luxury & Festive Micro-Animations */
 .hero-gradient {
   background: linear-gradient(135deg, rgba(20,20,20,0.88) 0%, rgba(122,28,28,0.75) 100%);

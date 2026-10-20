@@ -10,7 +10,7 @@ export default function Footer() {
     store_email: 'support@radhamav.com',
     store_phone: '+91 6296740204',
     store_address: 'Sahoo House, 6FFX+RP6, Makrampur - Temathani Rd, Larma, Larma Batitaki, West Bengal 721166',
-    gst_number: '',
+    gst_number: '19OJLPS4550M1Z2',
     footer_bio: 'Radhamav Fashions is a premier single-vendor Indian ethnic couture store. Celebrating centuries of handloom silk weaving, royal zari motifs, and modern bridal fashion.',
     social_instagram: 'https://instagram.com',
     social_facebook: 'https://facebook.com',
@@ -157,6 +157,12 @@ export default function Footer() {
               <Mail className="w-4 h-4 text-brand-gold shrink-0" />
               <span>{settings.store_email}</span>
             </li>
+            {settings.gst_number && (
+              <li className="flex items-center gap-3 text-xs text-neutral-300">
+                <span className="text-brand-gold font-semibold uppercase text-[11px] tracking-wider">GSTIN:</span>
+                <span className="font-mono bg-neutral-800/80 px-2 py-0.5 rounded border border-neutral-700">{settings.gst_number}</span>
+              </li>
+            )}
           </ul>
         </div>
 
@@ -164,7 +170,14 @@ export default function Footer() {
 
       {/* Footer Bottom Line */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-neutral-800 flex flex-col md:flex-row items-center justify-between text-xs text-neutral-500 gap-4">
-        <p>© 2026 {settings.store_name}. All Rights Reserved.</p>
+        <div>
+          <p>© 2026 {settings.store_name}. All Rights Reserved.</p>
+          {settings.gst_number && (
+            <p className="text-[11px] text-neutral-400 mt-1">
+              GST Registration No (GSTIN): <span className="font-mono text-neutral-300 font-semibold">{settings.gst_number}</span>
+            </p>
+          )}
+        </div>
         <div className="flex items-center gap-4 text-neutral-400">
           <span>UPI / GPay</span>
           <span>•</span>

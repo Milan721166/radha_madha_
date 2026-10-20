@@ -4,8 +4,7 @@
   "description": "Backend API server for Radhamav Fashions Single-Vendor E-Commerce Platform",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "seed": "node db/seed.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
