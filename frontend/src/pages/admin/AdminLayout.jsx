@@ -41,7 +41,7 @@ export default function AdminLayout() {
         <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6 border border-brand-gold/30">
           
           <div className="text-center space-y-3">
-            <img src={logo} alt="Radhamav Fashions Logo" className="h-12 w-auto object-contain mx-auto" />
+            <img src={logo} alt="Radha Madhav Fashions Logo" className="h-14 w-14 rounded-full object-cover shadow-sm ring-1 ring-brand-gold/40 mx-auto" />
             <div>
               <span className="text-xs font-semibold text-brand-gold uppercase tracking-widest font-serif">Management Portal</span>
               <h2 className="font-serif text-2xl font-bold text-neutral-900">Admin Sign In</h2>
@@ -120,7 +120,7 @@ export default function AdminLayout() {
           >
             {mobileSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
-          <img src={logo} alt="Radhamav Fashions Logo" className="h-8 w-auto bg-white/95 p-1 rounded-lg" />
+          <img src={logo} alt="Radha Madhav Fashions Logo" className="h-9 w-9 rounded-full object-cover shadow-sm ring-1 ring-brand-gold/40" />
         </div>
         <span className="text-[10px] text-brand-gold uppercase font-bold tracking-widest">Admin Control</span>
       </div>
@@ -132,9 +132,12 @@ export default function AdminLayout() {
       `}>
         <div className="space-y-6">
           <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
-            <div className="flex flex-col gap-1">
-              <img src={logo} alt="Radhamav Fashions Logo" className="h-10 w-auto object-contain bg-white/95 p-1 rounded-xl shadow-md self-start" />
-              <span className="text-[10px] text-brand-gold font-sans uppercase tracking-[0.2em] font-semibold">Admin Portal</span>
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="Radha Madhav Fashions Logo" className="h-10 w-10 rounded-full object-cover shadow-sm ring-1 ring-brand-gold/40" />
+              <div>
+                <span className="font-serif text-sm font-bold text-white tracking-wide block leading-tight">RADHA MADHAV</span>
+                <span className="text-[9px] text-brand-gold font-sans uppercase tracking-[0.2em] font-semibold">Admin Portal</span>
+              </div>
             </div>
             <button onClick={() => setMobileSidebarOpen(false)} className="md:hidden text-neutral-400">
               <X className="w-5 h-5" />

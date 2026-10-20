@@ -101,21 +101,38 @@ export default function Navbar() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20 gap-2 lg:gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="relative flex items-center justify-between h-16 sm:h-20 gap-2 lg:gap-4">
           
           {/* Mobile Menu Toggle */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-neutral-700 hover:text-brand-maroon focus:outline-none shrink-0"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          <div className="flex items-center lg:hidden">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 -ml-1 text-neutral-800 hover:text-brand-maroon focus:outline-none shrink-0 transition-colors"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
 
-          {/* Brand Logo */}
-          <Link to="/" className="flex items-center group shrink-0">
-            <img src={logo} alt="Radhamadhav Fashions Logo" className="h-10 sm:h-12 md:h-14 w-auto object-contain group-hover:scale-105 transition-transform" />
-          </Link>
+          {/* Brand Logo - Perfectly centered on mobile, natural flow on desktop */}
+          <div className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0 flex items-center">
+            <Link to="/" className="flex items-center gap-2.5 group shrink-0">
+              <img
+                src={logo}
+                alt="Radha Madhav Fashions Logo"
+                className="h-11 w-11 sm:h-12 sm:w-12 md:h-14 md:w-14 rounded-full object-cover shadow-sm ring-1 ring-brand-gold/40 group-hover:scale-105 transition-transform"
+              />
+              <div className="hidden sm:flex flex-col">
+                <span className="font-serif text-base sm:text-lg lg:text-xl font-bold tracking-tight text-neutral-900 leading-none">
+                  RADHA MADHAV
+                </span>
+                <span className="text-[9px] tracking-widest text-brand-gold font-semibold uppercase leading-tight mt-0.5">
+                  FASHIONS
+                </span>
+              </div>
+            </Link>
+          </div>
 
           {/* Desktop Navigation Links */}
           <nav className="hidden lg:flex items-center gap-2.5 xl:gap-5 2xl:gap-7 font-medium text-xs xl:text-sm text-neutral-800 shrink min-w-0">

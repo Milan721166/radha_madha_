@@ -91,7 +91,11 @@ export default function Footer() {
         {/* Brand Bio */}
         <div className="lg:col-span-2">
           <div className="flex items-center gap-3 mb-4">
-            <img src={logo} alt="Radhamav Fashions Logo" className="h-12 w-auto object-contain bg-white/90 p-1.5 rounded-xl shadow-md" />
+            <img src={logo} alt="Radha Madhav Fashions Logo" className="h-14 w-14 rounded-full object-cover shadow-md ring-1 ring-brand-gold/40" />
+            <div>
+              <span className="font-serif text-lg font-bold text-white tracking-wide block leading-tight">RADHA MADHAV</span>
+              <span className="text-[10px] tracking-widest text-brand-gold font-semibold uppercase">FASHIONS</span>
+            </div>
           </div>
           <p className="text-sm text-neutral-400 leading-relaxed mb-6">
             {settings.footer_bio}
