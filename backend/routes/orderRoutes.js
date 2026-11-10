@@ -19,13 +19,14 @@ router.post('/:id/payment', authenticateToken, async (req, res) => {
 
 router.get('/:id/payment', authenticateToken, async (req, res) => {
   try {
-    const order = await dbAsync.get('SELECT * FROM orders WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    const lookup = /^\d+$/.test(req.params.id) ? 'id' : 'order_number';
+    const order = await dbAsync.get(`SELECT * FROM orders WHERE ${lookup} = ? AND user_id = ?`, [req.params.id, req.user.id]);
     if (!order || order.payment_method !== 'UPI') return res.status(404).json({ success: false, message: 'Payment order not found.' });
     const payment = await gateway.checkPayment(order);
     if (payment.status === 'paid' && order.order_status !== 'cancelled') {
       await dbAsync.run("UPDATE orders SET payment_status = 'paid', order_status = CASE WHEN order_status = 'pending' THEN 'confirmed' ELSE order_status END WHERE id = ? AND payment_status <> 'paid'", [order.id]);
     }
-    res.json({ success: true, status: payment.status, order: { id: order.id, orderNumber: order.order_number, totalAmount: Number(order.total_amount), paymentMethod: order.payment_method } });
+    res.json({ success: true, status: payment.status, order: { id: order.id, orderNumber: order.order_number, totalAmount: Number(order.total_amount), paymentMethod: order.payment_method, orderStatus: payment.status === 'paid' && order.order_status === 'pending' ? 'confirmed' : order.order_status } });
   } catch (err) { res.status(502).json({ success: false, message: err.message }); }
 });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle2, ShieldCheck, MapPin, CreditCard, Truck, ArrowRight, UserCheck, Check, Smartphone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -9,6 +9,11 @@ import OtpAuthModal from '../components/OtpAuthModal';
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnOrder = searchParams.get('order');
+  useEffect(() => {
+    if (returnOrder) navigate(`/order-success?order=${encodeURIComponent(returnOrder)}`, { replace: true });
+  }, [returnOrder, navigate]);
   const { user, login, register, addresses, saveAddress } = useAuth();
   const { cartItems, cartSummary, clearCart } = useCart();
   const { showToast } = useToast();

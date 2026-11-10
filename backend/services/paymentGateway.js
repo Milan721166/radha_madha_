@@ -34,7 +34,10 @@ function validatePayment(data, order) {
 
 async function createPayment(order) {
   const body = { amount: Number(order.total_amount), client_order_id: order.order_number, note: order.order_number };
-  if (process.env.PAYMENT_REDIRECT_URL) body.redirect_url = process.env.PAYMENT_REDIRECT_URL;
+  const redirect = new URL(process.env.PAYMENT_REDIRECT_URL || 'https://radhamadhavfashion.com/order-success');
+  if (redirect.protocol !== 'https:') throw new Error('Payment return URL must use HTTPS.');
+  redirect.searchParams.set('order', order.order_number);
+  body.redirect_url = redirect.toString();
   const data = validatePayment(await request('/orders', body), order);
   const url = new URL(data.payment_url);
   if (url.protocol !== 'https:' || url.origin !== new URL(BASE_URL).origin) throw new Error('Invalid payment checkout URL.');
