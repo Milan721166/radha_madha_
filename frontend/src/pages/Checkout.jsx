@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { CheckCircle2, ShieldCheck, MapPin, CreditCard, Truck, ArrowRight, UserCheck, Check, Smartphone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -40,6 +40,66 @@ export default function Checkout() {
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState(null);
+  const [onlineEnabled, setOnlineEnabled] = useState(false);
+  const [pendingOrder, setPendingOrder] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('radhamav_pending_payment') || 'null'); } catch { return null; }
+  });
+  const [paymentStatus, setPaymentStatus] = useState('pending');
+  useEffect(() => { api.get('/orders/payment/config').then(r => setOnlineEnabled(r.enabled)).catch(() => {}); }, []);
+
+  // Recheck on return from hosted checkout and while the payment screen is open.
+  useEffect(() => {
+    if (!pendingOrder || !user) return;
+    let disposed = false;
+    let checking = false;
+    const refresh = async () => {
+      if (checking || document.visibilityState === 'hidden') return;
+      checking = true;
+      try {
+        const result = await api.get(`/orders/${pendingOrder.id}/payment`);
+        if (disposed) return;
+        setPaymentStatus(result.status);
+        if (result.status === 'paid') {
+          localStorage.removeItem('radhamav_pending_payment');
+          setPendingOrder(null);
+          setCompletedOrder(result.order);
+          setStep(5);
+        }
+      } catch { /* Keep the manual retry available after network errors. */ }
+      finally { checking = false; }
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 10000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      disposed = true;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [pendingOrder?.id, user?.id]);
+
+  const checkPayment = async () => {
+    setIsSubmitting(true);
+    try {
+      const result = await api.get(`/orders/${pendingOrder.id}/payment`);
+      setPaymentStatus(result.status);
+      if (result.status === 'paid') {
+        localStorage.removeItem('radhamav_pending_payment');
+        setPendingOrder(null);
+        setCompletedOrder(result.order);
+        setStep(5);
+        showToast('Payment verified successfully!', 'success');
+      } else showToast(`Payment status: ${result.status.replaceAll('_', ' ')}`, 'info');
+    } catch (err) { showToast(err.message, 'error'); }
+    finally { setIsSubmitting(false); }
+  };
+
+  const payOrder = async (order) => {
+    const result = await api.post(`/orders/${order.id}/payment`);
+    if (result.paymentUrl) window.location.assign(result.paymentUrl);
+  };
 
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
@@ -79,6 +139,13 @@ export default function Checkout() {
       });
 
       if (res.success) {
+        if (paymentMethod === 'UPI') {
+          localStorage.setItem('radhamav_pending_payment', JSON.stringify(res.order));
+          setPendingOrder(res.order);
+          clearCart();
+          await payOrder(res.order);
+          return;
+        }
         setCompletedOrder(res.order);
         clearCart();
         setStep(5);
@@ -90,6 +157,19 @@ export default function Checkout() {
       setIsSubmitting(false);
     }
   };
+
+  if (pendingOrder) return (
+    <div className="max-w-xl mx-auto px-4 py-16 space-y-5 text-center">
+      <h1 className="font-serif text-3xl font-bold">Complete your UPI payment</h1>
+      <p>Order {pendingOrder.orderNumber} · ₹{Number(pendingOrder.totalAmount).toLocaleString('en-IN')}</p>
+      <p>Payment status: {paymentStatus.replaceAll('_', ' ')}. Your order is confirmed after payment verification.</p>
+      <button disabled={isSubmitting} onClick={checkPayment} className="maroon-btn rounded-full px-6 py-3">{isSubmitting ? 'Checking…' : 'Check Payment Status'}</button>
+      <button disabled={isSubmitting} onClick={() => { setIsSubmitting(true); payOrder(pendingOrder).catch(err => showToast(err.message, 'error')).finally(() => setIsSubmitting(false)); }} className="gold-btn rounded-full px-6 py-3 ml-3">Open Payment Page</button>
+      <p className="text-sm">If payment failed or expired, cancel the unpaid order in your account before placing another order.</p>
+      <Link to="/account" className="underline block">View my orders</Link>
+      <button onClick={() => { localStorage.removeItem('radhamav_pending_payment'); setPendingOrder(null); }} className="underline text-sm">Return to checkout</button>
+    </div>
+  );
 
   if (step === 5 && completedOrder) {
     return (
@@ -103,7 +183,7 @@ export default function Checkout() {
             Thank You For Your Order!
           </h1>
           <p className="text-sm text-neutral-600">
-            Your Order ID is <span className="font-bold text-brand-maroon">{completedOrder.orderNumber}</span>. We've sent a confirmation notice to your email.
+            Your Order ID is <span className="font-bold text-brand-maroon">{completedOrder.orderNumber}</span>. Your order is confirmed. You can view its details in your account.
           </p>
         </div>
 
@@ -114,7 +194,7 @@ export default function Checkout() {
             <span className="font-bold text-neutral-900">{completedOrder.paymentMethod}</span>
           </div>
           <div className="flex justify-between text-xs text-neutral-600">
-            <span>Total Paid:</span>
+            <span>{completedOrder.paymentMethod === 'COD' ? 'Amount Due:' : 'Total Paid:'}</span>
             <span className="font-bold text-brand-maroon text-base">₹{completedOrder.totalAmount?.toLocaleString('en-IN')}</span>
           </div>
           <div className="flex justify-between text-xs text-neutral-600">
@@ -367,9 +447,7 @@ export default function Checkout() {
               <div className="space-y-3">
                 {[
                   { id: 'COD', title: 'Cash on Delivery (COD)', desc: 'Pay with cash upon package arrival' },
-                  { id: 'UPI', title: 'Instant UPI (Google Pay / PhonePe / Paytm)', desc: 'Scan & Pay instantly' },
-                  { id: 'CARD', title: 'Credit / Debit Card', desc: 'Visa, MasterCard, RuPay' },
-                  { id: 'NETBANKING', title: 'Net Banking', desc: 'All major Indian banks supported' }
+                  ...(onlineEnabled ? [{ id: 'UPI', title: 'UPI (Google Pay / PhonePe / Paytm)', desc: 'Continue to secure UPI checkout' }] : [])
                 ].map((pm) => (
                   <label
                     key={pm.id}

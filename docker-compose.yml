@@ -12,6 +12,11 @@ services:
       - "${BACKEND_PORT:-5000}:5000"
     environment:
       - PORT=5000
+      - PAYMENT_API_KEY=${PAYMENT_API_KEY:-}
+      - PAYMENT_API_SECRET=${PAYMENT_API_SECRET:-}
+      - PAYMENT_ENVIRONMENT=${PAYMENT_ENVIRONMENT:-live}
+      - PAYMENT_WEBHOOK_SECRET=${PAYMENT_WEBHOOK_SECRET:-}
+      - PAYMENT_REDIRECT_URL=${PAYMENT_REDIRECT_URL:-https://radhamadhavfashion.com/checkout}
       - NODE_ENV=production
       - JWT_SECRET=${JWT_SECRET:-radhamav_secret_jwt_key_2026}
       - DATABASE_URL=${DATABASE_URL:-}

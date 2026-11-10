@@ -101,48 +101,137 @@ export default function Navbar() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="relative flex items-center justify-between h-16 sm:h-20 gap-2 lg:gap-4">
-          
-          {/* Mobile Menu Toggle */}
-          <div className="flex items-center lg:hidden">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 -ml-1 text-neutral-800 hover:text-brand-maroon focus:outline-none shrink-0 transition-colors"
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* MOBILE & TABLET HEADER (Screen < lg) */}
+        <div className="relative flex lg:hidden items-center justify-between h-16">
+          {/* Left: Mobile Menu Toggle */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 -ml-2 text-neutral-800 hover:text-brand-maroon focus:outline-none shrink-0"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
 
-          {/* Brand Logo - Perfectly centered on mobile, natural flow on desktop */}
-          <div className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0 flex items-center">
-            <Link to="/" className="flex items-center gap-2.5 group shrink-0">
-              <img
-                src={logo}
-                alt="Radha Madhav Fashions Logo"
-                className="h-11 w-11 sm:h-12 sm:w-12 md:h-14 md:w-14 rounded-full object-cover shadow-sm ring-1 ring-brand-gold/40 group-hover:scale-105 transition-transform"
-              />
-              <div className="hidden sm:flex flex-col">
-                <span className="font-serif text-base sm:text-lg lg:text-xl font-bold tracking-tight text-neutral-900 leading-none">
-                  RADHA MADHAV
+          {/* Center: Brand Logo Medallion (Absolute Center) */}
+          <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
+            <img
+              src={logo}
+              alt="Radha Madhav Fashions Logo"
+              className="h-11 w-11 rounded-full object-cover shadow-sm ring-1 ring-brand-gold/40"
+            />
+          </Link>
+
+          {/* Right: Actions */}
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Wishlist */}
+            <Link to="/wishlist" className="relative p-2 text-neutral-700 hover:text-brand-maroon transition-colors" title="Wishlist">
+              <Heart className="w-5 h-5" />
+              {wishlistCount > 0 && (
+                <span className="absolute top-1 right-1 bg-brand-maroon text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {wishlistCount}
                 </span>
-                <span className="text-[9px] tracking-widest text-brand-gold font-semibold uppercase leading-tight mt-0.5">
-                  FASHIONS
-                </span>
-              </div>
+              )}
             </Link>
+
+            {/* Cart */}
+            <Link to="/cart" className="relative p-2 text-neutral-700 hover:text-brand-maroon transition-colors" title="Shopping Cart">
+              <ShoppingBag className="w-5 h-5" />
+              {cartCount > 0 && (
+                <span className="absolute top-1 right-1 bg-brand-gold text-neutral-900 text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
+            {/* Account / User Menu */}
+            <div className="relative">
+              {user ? (
+                <button
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className="p-1 rounded-full hover:bg-neutral-100 transition-colors"
+                >
+                  <div className="w-7 h-7 rounded-full bg-brand-maroon text-white font-medium text-xs flex items-center justify-center">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                </button>
+              ) : (
+                <Link
+                  to="/checkout"
+                  className="p-2 text-neutral-700 hover:text-brand-maroon transition-colors"
+                  title="Sign In"
+                >
+                  <User className="w-5 h-5" />
+                </Link>
+              )}
+
+              {/* Mobile Account Dropdown */}
+              {userDropdownOpen && user && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-neutral-100 py-2 z-50">
+                  <div className="px-4 py-2 border-b border-neutral-100">
+                    <p className="text-sm font-semibold text-neutral-900">{user.name}</p>
+                    <p className="text-xs text-neutral-500 truncate">{user.email}</p>
+                  </div>
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      className="flex items-center gap-2.5 px-4 py-2 text-sm text-brand-maroon font-semibold bg-brand-champagne/40 hover:bg-brand-champagne transition-colors"
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      Admin Dashboard
+                    </Link>
+                  )}
+                  <Link to="/account" className="flex items-center gap-2.5 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50">
+                    <User className="w-4 h-4" />
+                    My Account Profile
+                  </Link>
+                  <Link to="/account?tab=orders" className="flex items-center gap-2.5 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50">
+                    <Package className="w-4 h-4" />
+                    My Orders
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="w-full text-left flex items-center gap-2.5 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-neutral-100"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
+        </div>
+
+        {/* DESKTOP HEADER (Screen >= lg) */}
+        <div className="hidden lg:flex items-center justify-between h-20 gap-4 xl:gap-8">
+          
+          {/* Brand Logo & Name */}
+          <Link to="/" className="flex items-center gap-3 group shrink-0">
+            <img
+              src={logo}
+              alt="Radha Madhav Fashions Logo"
+              className="h-12 w-12 xl:h-14 xl:w-14 rounded-full object-cover shadow-sm ring-1 ring-brand-gold/40 group-hover:scale-105 transition-transform"
+            />
+            <div className="flex flex-col">
+              <span className="font-serif text-lg xl:text-xl font-bold tracking-tight text-neutral-900 leading-none">
+                RADHA MADHAV
+              </span>
+              <span className="text-[9px] tracking-[0.25em] text-brand-gold font-semibold uppercase leading-tight mt-1">
+                FASHIONS
+              </span>
+            </div>
+          </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-2.5 xl:gap-5 2xl:gap-7 font-medium text-xs xl:text-sm text-neutral-800 shrink min-w-0">
+          <nav className="flex items-center gap-3 xl:gap-6 font-medium text-xs xl:text-sm text-neutral-800 shrink-0">
             <Link to="/" className="hover:text-brand-maroon transition-colors py-1 shrink-0">Home</Link>
             <Link to="/shop" className="hover:text-brand-maroon transition-colors py-1 shrink-0">Shop All</Link>
             {categoriesNav.slice(0, 4).map(cat => (
               <Link
                 key={cat.id}
                 to={`/shop?category=${cat.slug}`}
-                className="hover:text-brand-maroon transition-colors py-1 shrink-0 truncate max-w-[120px] xl:max-w-none"
+                className="hover:text-brand-maroon transition-colors py-1 shrink-0 truncate max-w-[110px] xl:max-w-none"
               >
                 {cat.name}
               </Link>
@@ -151,10 +240,10 @@ export default function Navbar() {
           </nav>
 
           {/* Search Bar & Actions */}
-          <div className="flex items-center gap-2 sm:gap-3 xl:gap-4 shrink-0">
+          <div className="flex items-center gap-2 xl:gap-4 shrink-0">
             
             {/* Search Bar Input */}
-            <div className="relative hidden md:block w-36 lg:w-44 xl:w-60 2xl:w-72" ref={searchRef}>
+            <div className="relative w-36 lg:w-44 xl:w-60 2xl:w-72" ref={searchRef}>
               <form onSubmit={handleSearchSubmit}>
                 <input
                   type="text"
@@ -162,10 +251,10 @@ export default function Navbar() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => searchQuery.length >= 2 && setShowSearchPopup(true)}
-                  className="w-full bg-neutral-100/80 border border-neutral-200 focus:border-brand-gold rounded-full py-1.5 xl:py-2 pl-3 xl:pl-4 pr-9 text-xs xl:text-sm outline-none transition-all placeholder:text-neutral-400"
+                  className="w-full bg-neutral-100/80 border border-neutral-200 focus:border-brand-gold rounded-full py-2 pl-4 pr-9 text-xs xl:text-sm outline-none transition-all placeholder:text-neutral-400"
                 />
                 <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-brand-maroon">
-                  <Search className="w-3.5 h-3.5 xl:w-4 xl:h-4" />
+                  <Search className="w-4 h-4" />
                 </button>
               </form>
 
@@ -245,7 +334,7 @@ export default function Navbar() {
                   <div className="w-8 h-8 rounded-full bg-brand-maroon text-white font-medium text-sm flex items-center justify-center">
                     {user.name.charAt(0).toUpperCase()}
                   </div>
-                  <ChevronDown className="w-4 h-4 text-neutral-500 hidden sm:block" />
+                  <ChevronDown className="w-4 h-4 text-neutral-500" />
                 </button>
               ) : (
                 <Link
@@ -253,11 +342,11 @@ export default function Navbar() {
                   className="flex items-center gap-1.5 text-sm font-medium text-neutral-700 hover:text-brand-maroon px-3 py-1.5 rounded-full border border-neutral-200 hover:border-brand-gold transition-colors"
                 >
                   <User className="w-4 h-4" />
-                  <span className="hidden sm:inline">Sign In</span>
+                  <span>Sign In</span>
                 </Link>
               )}
 
-              {/* Account Dropdown */}
+              {/* Desktop Account Dropdown */}
               {userDropdownOpen && user && (
                 <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-neutral-100 py-2 z-50">
                   <div className="px-4 py-2 border-b border-neutral-100">

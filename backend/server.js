@@ -22,9 +22,16 @@ const uploadRoutes = require('./routes/uploadRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const paymentWebhookStore = require('./services/paymentWebhookStore');
+const { createHandler } = require('./services/paymentWebhook');
 
 // Enable CORS & JSON Parsing
 app.use(cors());
+// Signature verification requires the exact bytes, before the JSON parser.
+app.post('/api/payments/webhook', express.raw({ type: 'application/json', limit: '256kb' }), createHandler({
+  store: paymentWebhookStore,
+  gateway: require('./services/paymentGateway')
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -69,6 +76,7 @@ app.use((err, req, res, next) => {
 async function startServer() {
   try {
     await initDatabase();
+    await paymentWebhookStore.initWebhookStore();
     app.listen(PORT, () => {
       console.log(`====================================================`);
       console.log(`🚀 Radhamav Fashions API Server running on port ${PORT}`);

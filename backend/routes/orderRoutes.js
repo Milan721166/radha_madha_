@@ -2,11 +2,37 @@ const express = require('express');
 const router = express.Router();
 const { dbAsync } = require('../db/database');
 const { authenticateToken } = require('../middleware/auth');
+const gateway = require('../services/paymentGateway');
+
+router.get('/payment/config', (req, res) => res.json({ success: true, enabled: gateway.configured() }));
+
+router.post('/:id/payment', authenticateToken, async (req, res) => {
+  try {
+    const order = await dbAsync.get('SELECT * FROM orders WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    if (!order || order.payment_method !== 'UPI' || order.order_status === 'cancelled') return res.status(400).json({ success: false, message: 'Order is unavailable for payment.' });
+    if (order.payment_status === 'paid') return res.json({ success: true, status: 'paid' });
+    let payment;
+    try { payment = await gateway.checkPayment(order); } catch { payment = await gateway.createPayment(order); }
+    res.json({ success: true, paymentUrl: payment.payment_url, status: payment.status });
+  } catch (err) { res.status(502).json({ success: false, message: err.message }); }
+});
+
+router.get('/:id/payment', authenticateToken, async (req, res) => {
+  try {
+    const order = await dbAsync.get('SELECT * FROM orders WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    if (!order || order.payment_method !== 'UPI') return res.status(404).json({ success: false, message: 'Payment order not found.' });
+    const payment = await gateway.checkPayment(order);
+    if (payment.status === 'paid' && order.order_status !== 'cancelled') {
+      await dbAsync.run("UPDATE orders SET payment_status = 'paid', order_status = CASE WHEN order_status = 'pending' THEN 'confirmed' ELSE order_status END WHERE id = ? AND payment_status <> 'paid'", [order.id]);
+    }
+    res.json({ success: true, status: payment.status, order: { id: order.id, orderNumber: order.order_number, totalAmount: Number(order.total_amount), paymentMethod: order.payment_method } });
+  } catch (err) { res.status(502).json({ success: false, message: err.message }); }
+});
 
 // Place Order
 router.post('/create', authenticateToken, async (req, res) => {
   try {
-    const {
+    let {
       shippingAddress,
       paymentMethod = 'COD',
       items,
@@ -18,9 +44,35 @@ router.post('/create', authenticateToken, async (req, res) => {
       notes
     } = req.body;
 
+    if (!['COD', 'UPI'].includes(paymentMethod)) return res.status(400).json({ success: false, message: 'Unsupported payment method.' });
+    if (paymentMethod === 'UPI' && !gateway.configured()) return res.status(503).json({ success: false, message: 'Online payments are not configured.' });
+
     if (!items || !items.length || !shippingAddress || !totalAmount) {
       return res.status(400).json({ success: false, message: 'Invalid order details or cart is empty' });
     }
+
+    // Always charge catalog prices and store-computed totals, never browser totals.
+    subtotal = 0;
+    for (const item of items) {
+      const product = await dbAsync.get('SELECT * FROM products WHERE id = ?', [item.product_id || item.productId]);
+      const quantity = Number(item.quantity);
+      if (!product || product.status !== 'published' || !Number.isInteger(quantity) || quantity < 1 || quantity > product.stock) return res.status(400).json({ success: false, message: 'An item is unavailable or has insufficient stock.' });
+      const variantId = item.variant_id || item.variantId;
+      if (variantId) {
+        const variant = await dbAsync.get('SELECT * FROM product_variants WHERE id = ? AND product_id = ?', [variantId, product.id]);
+        if (!variant || quantity > variant.stock) return res.status(400).json({ success: false, message: 'Selected variant is unavailable.' });
+      }
+      item.unit_price = Number(product.sale_price || product.price);
+      item.quantity = quantity;
+      item.product_name = product.name;
+      subtotal += item.unit_price * quantity;
+    }
+    subtotal = Math.round(subtotal * 100) / 100;
+    shippingFee = subtotal > 999 ? 0 : 99;
+    taxAmount = Math.round(subtotal * 0.05);
+    discountAmount = 0;
+    totalAmount = Math.round((subtotal + shippingFee + taxAmount) * 100) / 100;
+    if (paymentMethod === 'UPI' && (totalAmount < 1 || totalAmount > 100000)) return res.status(400).json({ success: false, message: 'UPI payments support amounts from ₹1 to ₹1,00,000.' });
 
     const user = await dbAsync.get('SELECT name, email, phone FROM users WHERE id = ?', [req.user.id]);
 
@@ -34,7 +86,7 @@ router.post('/create', authenticateToken, async (req, res) => {
         order_number, user_id, customer_name, customer_email, customer_phone,
         shipping_address, payment_method, payment_status, order_status,
         subtotal, shipping_fee, tax_amount, discount_amount, total_amount, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       orderNumber,
       req.user.id,
@@ -43,7 +95,8 @@ router.post('/create', authenticateToken, async (req, res) => {
       user ? user.phone || '' : '',
       addressStr,
       paymentMethod,
-      paymentMethod === 'COD' ? 'pending' : 'paid',
+      'pending',
+      paymentMethod === 'COD' ? 'confirmed' : 'pending',
       subtotal,
       shippingFee,
       taxAmount,
@@ -95,8 +148,8 @@ router.post('/create', authenticateToken, async (req, res) => {
     // Log Order Status History
     await dbAsync.run(`
       INSERT INTO order_status_history (order_id, status, comment)
-      VALUES (?, 'confirmed', 'Order placed successfully by customer')
-    `, [orderId]);
+      VALUES (?, ?, 'Order placed successfully by customer')
+    `, [orderId, paymentMethod === 'COD' ? 'confirmed' : 'pending']);
 
     // Clear Customer Cart after order placement
     const cart = await dbAsync.get('SELECT id FROM cart WHERE user_id = ?', [req.user.id]);
